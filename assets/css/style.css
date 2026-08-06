@@ -1,0 +1,248 @@
+/* Custom Styles for Payal Arban Stichis */
+
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+/* Table Styles */
+.table {
+    background-color: white;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Button Styles */
+.btn {
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Form Styles */
+.form-control, .form-select {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 6px;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+    border-left: 4px solid var(--primary-color);
+    transition: transform 0.2s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+}
+
+.dashboard-card.success {
+    border-left-color: var(--success-color);
+}
+
+.dashboard-card.warning {
+    border-left-color: var(--warning-color);
+}
+
+.dashboard-card.danger {
+    border-left-color: var(--danger-color);
+}
+
+.dashboard-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
+/* Invoice/Print Styles */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    .print-area, .print-area * {
+        visibility: visible;
+    }
+    
+    .print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
+}
+
+.invoice-header {
+    border-bottom: 2px solid #333;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.invoice-table th {
+    background-color: #f8f9fa;
+}
+
+/* Barcode Sticker Styles */
+.sticker {
+    width: 2in;
+    height: 1.5in;
+    border: 1px dashed #ccc;
+    padding: 5px;
+    display: inline-block;
+    margin: 5px;
+    text-align: center;
+    page-break-inside: avoid;
+}
+
+.sticker-code {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.sticker-size {
+    font-size: 12px;
+    margin-bottom: 3px;
+}
+
+.sticker-mrp {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.sticker-barcode {
+    margin-top: 5px;
+}
+
+/* Badge Styles */
+.badge {
+    padding: 6px 12px;
+    font-weight: 500;
+}
+
+/* Loading Spinner */
+.loading {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+}
+
+.loading.show {
+    display: block;
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card-header {
+        font-size: 0.95rem;
+    }
+    
+    .table {
+        font-size: 0.85rem;
+    }
+    
+    .btn {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+}
+
+/* Utility Classes */
+.text-currency {
+    font-weight: 600;
+    color: var(--success-color);
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.border-start-primary {
+    border-left: 4px solid var(--primary-color) !important;
+}
+
+.border-start-success {
+    border-left: 4px solid var(--success-color) !important;
+}
+
+.border-start-warning {
+    border-left: 4px solid var(--warning-color) !important;
+}
+
+.border-start-danger {
+    border-left: 4px solid var(--danger-color) !important;
+}

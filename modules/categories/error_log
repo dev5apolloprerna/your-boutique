@@ -1,0 +1,1 @@
+[13-May-2026 10:24:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home1/getdemo/public_html/payal/includes/header.php:14) in /home1/getdemo/public_html/payal/modules/categories/list.php on line 17

@@ -1,0 +1,1 @@
+ALTER TABLE `categories` ADD `gst_rate` DECIMAL(18,2) NOT NULL DEFAULT '0' AFTER `created_at`, ADD `is_split` INT(11) NOT NULL DEFAULT '0' AFTER `gst_rate`;

@@ -1,0 +1,6 @@
+[04-Jul-2026 17:56:54 UTC] PHP Warning:  Undefined variable $web_url in /home1/getdemo/public_html/payal/config/session.php on line 47
+[06-Jul-2026 07:14:11 UTC] PHP Warning:  Undefined variable $web_url in /home1/getdemo/public_html/payal/config/session.php on line 47
+[09-Jul-2026 04:25:00 UTC] PHP Warning:  Undefined variable $web_url in /home1/getdemo/public_html/payal/config/session.php on line 47
+[14-Jul-2026 12:54:37 UTC] PHP Warning:  Undefined variable $web_url in /home1/getdemo/public_html/your-boutique/config/session.php on line 47
+[20-Jul-2026 11:31:11 UTC] PHP Warning:  Undefined variable $web_url in /home1/getdemo/public_html/your-boutique/config/session.php on line 47
+[20-Jul-2026 11:41:39 UTC] PHP Warning:  Undefined variable $web_url in /home1/getdemo/public_html/your-boutique/config/session.php on line 47

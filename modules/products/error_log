@@ -1,0 +1,19 @@
+[13-May-2026 06:11:29 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home1/getdemo/public_html/payal/includes/header.php:14) in /home1/getdemo/public_html/payal/modules/products/add.php on line 58
+[13-May-2026 06:12:19 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home1/getdemo/public_html/payal/includes/header.php:14) in /home1/getdemo/public_html/payal/modules/products/edit.php on line 52
+[13-May-2026 07:04:20 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home1/getdemo/public_html/payal/includes/header.php:14) in /home1/getdemo/public_html/payal/modules/products/add.php on line 58
+[13-May-2026 07:47:36 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home1/getdemo/public_html/payal/includes/header.php:14) in /home1/getdemo/public_html/payal/modules/products/edit.php on line 52
+[13-May-2026 08:49:08 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home1/getdemo/public_html/payal/includes/header.php:14) in /home1/getdemo/public_html/payal/modules/products/edit.php on line 52
+[13-May-2026 09:02:43 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home1/getdemo/public_html/payal/includes/header.php:14) in /home1/getdemo/public_html/payal/modules/products/add.php on line 58
+[14-May-2026 06:06:58 UTC] PHP Parse error:  syntax error, unexpected variable "$pageTitle" in /home1/getdemo/public_html/payal/modules/products/sticker.php on line 3
+[30-Jun-2026 11:53:49 UTC] PHP Warning:  Undefined array key "product_code " in /home1/getdemo/public_html/payal/modules/products/list.php on line 50
+[30-Jun-2026 11:53:49 UTC] PHP Warning:  Undefined array key "product_code " in /home1/getdemo/public_html/payal/modules/products/list.php on line 50
+[30-Jun-2026 13:20:08 UTC] PHP Warning:  Undefined variable $number in /home1/getdemo/public_html/payal/modules/products/list.php on line 54
+[30-Jun-2026 13:20:08 UTC] PHP Warning:  Undefined variable $number in /home1/getdemo/public_html/payal/modules/products/list.php on line 54
+[30-Jun-2026 13:20:08 UTC] PHP Warning:  Undefined variable $number in /home1/getdemo/public_html/payal/modules/products/list.php on line 54
+[30-Jun-2026 13:23:52 UTC] PHP Warning:  Undefined array key "size_code" in /home1/getdemo/public_html/payal/modules/products/view.php on line 143
+[30-Jun-2026 13:23:52 UTC] PHP Warning:  Undefined array key "size_code" in /home1/getdemo/public_html/payal/modules/products/view.php on line 143
+[30-Jun-2026 13:23:52 UTC] PHP Warning:  Undefined array key "size_code" in /home1/getdemo/public_html/payal/modules/products/view.php on line 143
+[30-Jun-2026 13:23:52 UTC] PHP Warning:  Undefined array key "size_code" in /home1/getdemo/public_html/payal/modules/products/view.php on line 143
+[30-Jun-2026 13:23:52 UTC] PHP Warning:  Undefined array key "size_code" in /home1/getdemo/public_html/payal/modules/products/view.php on line 143
+[30-Jun-2026 13:23:52 UTC] PHP Warning:  Undefined array key "size_code" in /home1/getdemo/public_html/payal/modules/products/view.php on line 143
+[30-Jun-2026 13:23:52 UTC] PHP Warning:  Undefined array key "size_code" in /home1/getdemo/public_html/payal/modules/products/view.php on line 143

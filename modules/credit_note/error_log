@@ -1,0 +1,25 @@
+[13-May-2026 13:04:19 UTC] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php:187
+Stack trace:
+#0 /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php(187): mysqli_stmt->bind_param('ssiiddddsi', 'CN000001', '2026-05-13', 1, 9, 200.0, 4.76, 4.76, 200.0, 'Exchange', '', 1)
+#1 {main}
+  thrown in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php on line 187
+[14-May-2026 09:36:39 UTC] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php:187
+Stack trace:
+#0 /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php(187): mysqli_stmt->bind_param('ssiiddddsi', 'CN000001', '2026-05-14', 3, 3, 200.0, 4.76, 4.76, 200.0, 'Exchange', 'zeor zeo', 1)
+#1 {main}
+  thrown in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php on line 187
+[14-May-2026 10:02:40 UTC] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php:187
+Stack trace:
+#0 /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php(187): mysqli_stmt->bind_param('ssiiddddsi', 'CN000001', '2026-05-14', 3, 3, 200.0, 4.76, 4.76, 200.0, 'Exchange', '', 1)
+#1 {main}
+  thrown in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php on line 187
+[14-May-2026 10:07:29 UTC] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php:251
+Stack trace:
+#0 /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php(251): mysqli_stmt->bind_param('iiiiddddddd', 13, 4, 3, 1, '1750.00', '5.00', 1666.67, 41.67, 41.67, 1750.0)
+#1 {main}
+  thrown in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php on line 251
+[14-May-2026 10:26:35 UTC] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php:251
+Stack trace:
+#0 /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php(251): mysqli_stmt->bind_param('iiiiddddddd', 14, 4, 3, 1, '1750.00', '5.00', 1666.67, 41.67, 41.67, 1750.0)
+#1 {main}
+  thrown in /home1/getdemo/public_html/payal/modules/credit_note/create_credit_note.php on line 251
