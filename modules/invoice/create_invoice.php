@@ -231,14 +231,10 @@ if (isset($_POST['generate_invoice'])) {
                 $subtotal += $item['mrp'] * $item['quantity'];
             }
             
-            // $totalDiscount = $billDiscount;
-            // $taxableAmount = $subtotal - $billDiscount;
-            $totalDiscount = $billDiscount;
-            $discountPercentage = $subtotal > 0
-                ? round(($totalDiscount / $subtotal) * 100, 2)
-                : 0;
-            $taxableAmount = $subtotal - $billDiscount;
-            // $totalDiscount = 0;
+            // Discounts are recorded once on the invoice header. Invoice item
+            // amounts remain at their full value so the detail lines reconcile
+            // to the subtotal before the invoice-level discount is applied.
+            $totalDiscount = 0;
             
             // Calculate GST for each item
             foreach ($_SESSION['invoice_cart'] as &$item) {
@@ -275,22 +271,23 @@ if (isset($_POST['generate_invoice'])) {
                 // $itemDiscounted = $itemTotal;
                 $itemLevelDiscount = round($itemTotal * (floatval($item['discount_percent'] ?? 0) / 100), 2);
                 $billDiscountShare = round(($itemTotal - $itemLevelDiscount) * ($billDiscountPercent / 100), 2);
-                $item['bill_discount'] = $itemLevelDiscount + $billDiscountShare;
-                $itemDiscounted = $itemTotal - $item['bill_discount'];
-                $totalDiscount += $item['bill_discount'];
-                $discountedBase = $itemDiscounted / (1 + ($item['gst_rate'] / 100));
+                $itemDiscount = $itemLevelDiscount + $billDiscountShare;
+                $totalDiscount += $itemDiscount;
+                $discountedTotal = $itemTotal - $itemDiscount;
+                $fullBase = $itemTotal / (1 + ($item['gst_rate'] / 100));
                 
-                $cgst = ($discountedBase * ($item['gst_rate'] / 2)) / 100;
-                $sgst = ($discountedBase * ($item['gst_rate'] / 2)) / 100;
+                $cgst = ($fullBase * ($item['gst_rate'] / 2)) / 100;
+                $sgst = ($fullBase * ($item['gst_rate'] / 2)) / 100;
                 
-                $item['base_amount'] = $discountedBase;
+                $item['base_amount'] = $fullBase;
                 $item['cgst'] = $cgst;
                 $item['sgst'] = $sgst;
-                $item['total'] = $itemDiscounted;
+                $item['total'] = $itemTotal;
+                $item['discount_amount'] = 0;
                 
                 $totalCGST += $cgst;
                 $totalSGST += $sgst;
-                $grandTotal += $itemDiscounted;
+                $grandTotal += $discountedTotal;
             }
             // $grandTotal -= $totalDiscount;
             // Generate invoice number
@@ -314,7 +311,7 @@ if (isset($_POST['generate_invoice'])) {
                 $itemSql = "INSERT INTO invoice_items (invoice_id, product_id, size_id, quantity, mrp, gst_rate, discount_amount, base_amount, cgst_amount, sgst_amount, total_amount) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $itemStmt = $conn->prepare($itemSql);
-                $itemStmt->bind_param('iiiiddddddd', $invoiceId, $cartItem['product_id'], $cartItem['size_id'], $cartItem['quantity'], $cartItem['mrp'], $cartItem['gst_rate'], $cartItem['bill_discount'], $cartItem['base_amount'], $cartItem['cgst'], $cartItem['sgst'], $cartItem['total']);
+                $itemStmt->bind_param('iiiiddddddd', $invoiceId, $cartItem['product_id'], $cartItem['size_id'], $cartItem['quantity'], $cartItem['mrp'], $cartItem['gst_rate'], $cartItem['discount_amount'], $cartItem['base_amount'], $cartItem['cgst'], $cartItem['sgst'], $cartItem['total']);
                 $itemStmt->execute();
                 
                 // Update stock

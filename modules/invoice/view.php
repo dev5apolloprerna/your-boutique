@@ -394,7 +394,8 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
         ? (float)$item['gst_rate']
         : (float)$item['category_gst_rate'];
 
-    $itemTotalAmount = (float)$item['total_amount'];
+    // Always print the full item value; discounts belong to the invoice summary.
+    $itemTotalAmount = round((float)$item['mrp'] * (int)$item['quantity'], 2);
 
     $shouldSplit = (
         $gstRate == 5.00 &&
@@ -433,13 +434,14 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
         ]);
 
     } else {
+        $fullAmountCalc = splitInclusiveGstAmount($itemTotalAmount, $gstRate);
         $rowsToPrint[] = array_merge($item, [
             'print_product_code' => $item['product_code'],
             'print_product_name' => $item['product_name'],
-            'print_base_amount'  => (float)$item['base_amount'],
-            'print_cgst_amount'  => (float)$item['cgst_amount'],
-            'print_sgst_amount'  => (float)$item['sgst_amount'],
-            'print_total_amount' => (float)$item['total_amount'],
+            'print_base_amount'  => $fullAmountCalc['base_amount'],
+            'print_cgst_amount'  => $fullAmountCalc['cgst_amount'],
+            'print_sgst_amount'  => $fullAmountCalc['sgst_amount'],
+            'print_total_amount' => $fullAmountCalc['total_amount'],
         ]);
     }
 
@@ -464,9 +466,6 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
             <?php echo strtoupper($printItem['print_product_name']); ?>&nbsp;&nbsp;
             <small>Size: <?php echo $printItem['size_name']; ?></small>
         </strong>
-        <?php if ($rowIndex === 0 && $item['display_discount_amount'] > 0): ?>
-            <!--<br><small><strong>Discount:</strong> -₹<?php echo number_format($item['display_discount_amount'], 2); ?></small>-->
-        <?php endif; ?>
     </td>
 
     <td class="text-center">
@@ -507,7 +506,7 @@ endforeach;
                 <?php
                 $TotalRow = 7;
                 if ($displayDiscount > 0) { ///if($invoice['discount_amount'] > 0){
-                    $TotalRow = 6;
+                    $TotalRow = 5;
                 }
                 while ($iCounter <  $TotalRow) : 
                     
@@ -554,13 +553,27 @@ endforeach;
                     <td class="text-right"><?php echo number_format($totalCGST, 2); ?></td>
                     <td></td>
                     <td class="text-right"><?php echo number_format($totalSGST, 2); ?></td>
-                    <td class="text-right"><strong><?php echo number_format($invoice['total_amount'], 2); ?></strong></td>
+                    <td class="text-right"><strong><?php echo number_format($invoice['subtotal'], 2); ?></strong></td>
                 </tr>
+                <?php if ($displayDiscount > 0): ?>
+                    <tr >
+                        <td colspan="9" style="border-left: 0.25px solid #000;" class="text-right"><strong>Gross Amount:</strong></td>
+                        <td width="100" class="text-right"><?php echo number_format($invoice['subtotal'], 2); ?></td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" style="border-left: 0.25px solid #000;" class="text-right"><strong>Discount (<?php echo number_format($discountPercent, 2); ?>%):</strong></td>
+                        <td class="text-right"><strong>-<?php echo number_format($displayDiscount, 2); ?></strong></td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="9" style="border-left: 0.25px solid #000;" class="text-right"><strong>Net Payable:</strong></td>
+                        <td class="text-right"><strong><?php echo number_format($invoice['total_amount'], 2); ?></strong></td>
+                    </tr>
+                <?php endif; ?>
             </tbody>
         </table>
         
         <?php if ($displayDiscount > 0): ?>
-        <table class="items-table totals-section" aria-label="Invoice discount summary">
+        <!-- <table class="items-table totals-section" aria-label="Invoice discount summary">
             <tbody>
                 <tr>
                     <td class="text-right"><strong>Gross Amount:</strong></td>
@@ -575,7 +588,7 @@ endforeach;
                     <td class="text-right"><strong><?php echo number_format($invoice['total_amount'], 2); ?></strong></td>
                 </tr>
             </tbody>
-        </table>
+        </table> -->
         <?php endif; ?>
         
         <!-- Amount in Words -->
