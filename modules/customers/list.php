@@ -94,7 +94,8 @@ $result = $conn->query($sql);
                                 <td>
                                     <strong><?php echo htmlspecialchars($row['party_name']); ?></strong>
                                 </td>
-                                <td><?php echo $row['mobile']; ?></td>
+                                <!--<td><?php echo $row['mobile']; ?></td>-->
+                                <td><?php echo !empty($row['mobile']) ? htmlspecialchars($row['mobile']) : '-'; ?></td>
                                 <td><?php echo !empty($row['notes']) ? htmlspecialchars(substr($row['notes'], 0, 50)) . '...' : '-'; ?></td>
                                 <td class="text-end">
                                     <a href="edit.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-warning">

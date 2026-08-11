@@ -26,24 +26,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $mobile = sanitize($_POST['mobile'] ?? '');
     $notes = sanitize($_POST['notes'] ?? '');
     
-    if (empty($partyName) || empty($mobile)) {
-        setFlashMessage('error', 'Name and Mobile are required');
-    } elseif (!isValidMobile($mobile)) {
-        setFlashMessage('error', 'Please enter a valid 10-digit mobile number');
+    // if (empty($partyName) || empty($mobile)) {
+    //     setFlashMessage('error', 'Name and Mobile are required');
+    // } elseif (!isValidMobile($mobile)) {
+    //     setFlashMessage('error', 'Please enter a valid 10-digit mobile number');
+    if (empty($partyName)) {
+        setFlashMessage('error', 'Customer name is required');
+    } elseif ($mobile !== '' && !isValidMobile($mobile)) {
+        setFlashMessage('error', 'Please enter a valid 10-digit mobile number or leave it blank');
     } else {
         // Check if mobile already exists (excluding current)
-        $checkSql = "SELECT id FROM parties WHERE mobile = ? AND id != ?";
-        $stmt = $conn->prepare($checkSql);
-        $stmt->bind_param('si', $mobile, $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        // $checkSql = "SELECT id FROM parties WHERE mobile = ? AND id != ?";
+        // $stmt = $conn->prepare($checkSql);
+        // $stmt->bind_param('si', $mobile, $id);
+        // $stmt->execute();
+        // $result = $stmt->get_result();
         
-        if ($result->num_rows > 0) {
+        $result = null;
+        if ($mobile !== '') {
+            $checkSql = "SELECT id FROM parties WHERE mobile = ? AND id != ?";
+            $stmt = $conn->prepare($checkSql);
+            $stmt->bind_param('si', $mobile, $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        }
+        
+                if ($result && $result->num_rows > 0) { // if ($result->num_rows > 0) {
             setFlashMessage('error', 'Mobile number already exists');
         } else {
             $sql = "UPDATE parties SET party_name = ?, mobile = ?, notes = ? WHERE id = ?";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param('sssi', $partyName, $mobile, $notes, $id);
+            // $stmt->bind_param('sssi', $partyName, $mobile, $notes, $id);
+            $mobileValue = $mobile === '' ? null : $mobile;
+            $stmt->bind_param('sssi', $partyName, $mobileValue, $notes, $id);
             
             if ($stmt->execute()) {
                 setFlashMessage('success', 'Customer updated successfully');
@@ -84,9 +99,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     
                     <div class="mb-3">
-                        <label for="mobile" class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                        <!--<label for="mobile" class="form-label">Mobile Number <span class="text-danger">*</span></label>-->
+                        <label for="mobile" class="form-label">Mobile Number (Optional)</label>
                         <input type="text" class="form-control mobile-input number-only" id="mobile" name="mobile" 
-                               value="<?php echo $customer['mobile']; ?>" maxlength="10" required>
+                               value="<?php echo htmlspecialchars($customer['mobile'] ?? ''); ?>" maxlength="10">
+                               <!--value="<?php echo $customer['mobile']; ?>" maxlength="10" required>-->
                     </div>
                     
                     <div class="mb-3">

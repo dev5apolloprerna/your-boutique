@@ -32,25 +32,39 @@ $customer = $_SESSION['invoice_customer'];
                 <form method="POST" action="" id="customerSearchForm">
                     <div class="row">
                         <div class="col-md-8 mb-3">
-                            <label for="mobile" class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                            <!--<label for="mobile" class="form-label">Mobile Number <span class="text-danger">*</span></label>-->
+                            <label for="customer_search" class="form-label">Customer Name <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-phone"></i></span>
-                                <input type="text" class="form-control mobile-input number-only" id="mobile" 
-                                       name="mobile" placeholder="10-digit mobile" maxlength="10" required autofocus>
+                                <!--<span class="input-group-text"><i class="bi bi-phone"></i></span>-->
+                                <!--<input type="text" class="form-control mobile-input number-only" id="mobile" -->
+                                <!--       name="mobile" placeholder="10-digit mobile" maxlength="10" required autofocus>-->
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="customer_search"
+                                       placeholder="Enter at least 2 letters" required autofocus>
                                 <button type="button" class="btn btn-primary" id="searchCustomerBtn">
                                     <i class="bi bi-search"></i> Search
                                 </button>
                             </div>
                         </div>
                     </div>
+                    <div id="customerSearchResults" class="list-group mb-3"></div>
                     
                     <div id="customerDetailsForm" style="display:none;">
                         <input type="hidden" name="lock_customer" value="1">
+                        <input type="hidden" name="party_id" id="party_id" value="0">
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="party_name" class="form-label">Customer Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="party_name" name="party_name" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="mobile" class="form-label">Mobile Number (Optional)</label>
+                                <input type="text" class="form-control mobile-input number-only" id="mobile" name="mobile"
+                                       placeholder="10-digit mobile" maxlength="10">
                             </div>
                         </div>
                         
@@ -71,7 +85,8 @@ $customer = $_SESSION['invoice_customer'];
                     <h5 class="alert-heading"><i class="bi bi-check-circle"></i> Customer Locked</h5>
                     <hr>
                     <p class="mb-1"><strong>Name:</strong> <?php echo htmlspecialchars($customer['name']); ?></p>
-                    <p class="mb-1"><strong>Mobile:</strong> <?php echo $customer['mobile']; ?></p>
+                    <!--<p class="mb-1"><strong>Mobile:</strong> <?php echo $customer['mobile']; ?></p>-->
+                    <p class="mb-1"><strong>Mobile:</strong> <?php echo !empty($customer['mobile']) ? htmlspecialchars($customer['mobile']) : 'Not provided'; ?></p>
                     <?php if (!empty($customer['notes'])): ?>
                     <p class="mb-0"><strong>Notes:</strong> <?php echo htmlspecialchars($customer['notes']); ?></p>
                     <?php endif; ?>
@@ -132,11 +147,15 @@ $customer = $_SESSION['invoice_customer'];
                             </div>
                             
                             <div class="col-md-4 mb-3">
-                                <label for="discount" class="form-label">Discount</label>
+                                <!--<label for="discount" class="form-label">Discount</label>-->
+                                <label for="discount_percent" class="form-label">Item Discount (%)</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">₹</span>
-                                    <input type="number" class="form-control" id="discount" name="discount" 
-                                           value="0" min="0" step="0.01">
+                                    <!--<span class="input-group-text">₹</span>-->
+                                    <!--<input type="number" class="form-control" id="discount" name="discount" -->
+                                    <!--       value="0" min="0" step="0.01">-->
+                                    <span class="input-group-text">%</span>
+                                    <input type="number" class="form-control" id="discount_percent" name="discount_percent"
+                                           value="0" min="0" max="100" step="0.01">
                                 </div>
                             </div>
                         </div>
@@ -183,7 +202,10 @@ $customer = $_SESSION['invoice_customer'];
                     </thead>
                     <tbody>
                         <?php foreach ($_SESSION['invoice_cart'] as $cartId => $item): 
-                            $itemTotal = ($item['mrp'] * $item['quantity']) - floatval($item['discount']);
+                            // $itemTotal = ($item['mrp'] * $item['quantity']) - floatval($item['discount']);
+                            $itemGross = $item['mrp'] * $item['quantity'];
+                            $itemDiscount = $itemGross * (floatval($item['discount_percent'] ?? 0) / 100);
+                            $itemTotal = $itemGross - $itemDiscount;
                         ?>
                         <tr>
                             <td>
@@ -191,9 +213,12 @@ $customer = $_SESSION['invoice_customer'];
                                 <small><?php echo $item['size_code'].$item['product_name']; ?></small><br>
                                 <span class="badge bg-secondary"><?php echo $item['size_name']; ?></span>
                                 x <?php echo $item['quantity']; ?>
-                                <?php if ($item['discount'] > 0): ?>
-                                <br><small class="text-danger">-<?php echo formatCurrency($item['discount']); ?></small>
-                                <?php endif; ?>
+                                <?php  //if ($item['discount'] > 0): ?>
+                                <!--<br><small class="text-danger">-<?php echo formatCurrency($item['discount']); ?></small>-->
+                                <?php if (!empty($item['discount_percent'])): ?>
+                                <br><small class="text-danger">-<?php echo number_format($item['discount_percent'], 2); ?>%</small>
+                                <?php   endif; ?>
+                                
                             </td>
                             <td class="text-end">
                                 <strong><?php echo formatCurrency($itemTotal); ?></strong><br>
@@ -228,7 +253,16 @@ $customer = $_SESSION['invoice_customer'];
                             <td class="text-end">
                                 <strong
                                     id="subtotal_amount"
-                                    data-subtotal="<?php echo $cartSummary['subtotal']; ?>">
+                                     data-subtotal="<?php echo $cartSummary['subtotal']; ?>"
+                                    data-item-discount="<?php
+                                        $itemDiscountOnly = 0;
+                                        foreach ($_SESSION['invoice_cart'] as $summaryItem) {
+                                            $summaryGross = $summaryItem['mrp'] * $summaryItem['quantity'];
+                                            $itemDiscountOnly += round($summaryGross * (floatval($summaryItem['discount_percent'] ?? 0) / 100), 2);
+                                        }
+                                        echo $itemDiscountOnly;
+                                    ?>">
+                                    <!--data-subtotal="<?php echo $cartSummary['subtotal']; ?>">-->
                                     <?php echo number_format($cartSummary['subtotal'],2,'.',''); ?>
                                 </strong>
                             </td>
@@ -240,8 +274,10 @@ $customer = $_SESSION['invoice_customer'];
                         </tr>
                         <?php endif; ?>
                         <tr>
-                            <td><strong>Bill Discount</strong></td>
-                            <td><input type="number" class="form-control" id="bill_discount" name="bill_discount" value="<?php echo $_SESSION['bill_discount'] ?? 0; ?>" min="0" step="0.01"></td>
+                            <!--<td><strong>Bill Discount</strong></td>-->
+                            <!--<td><input type="number" class="form-control" id="bill_discount" name="bill_discount" value="<?php echo $_SESSION['bill_discount'] ?? 0; ?>" min="0" step="0.01"></td>-->
+                            <td><strong>Bill Discount (%)</strong></td>
+                            <td><input type="number" class="form-control" id="bill_discount_percent" name="bill_discount_percent" value="<?php echo htmlspecialchars($_SESSION['bill_discount_percent'] ?? 0); ?>" min="0" max="100" step="0.01"></td>
                         </tr>
                         <tr class="table-success">
                             <td><strong>Total:</strong></td>
@@ -283,7 +319,8 @@ $(document).ready(function() {
     
     // Search customer
     $('#searchCustomerBtn').on('click', searchCustomer);
-    $('#mobile').on('keypress', function(e) {
+    // $('#mobile').on('keypress', function(e) {
+    $('#customer_search').on('keypress', function(e) {
         if (e.which === 13) {
             e.preventDefault();
             searchCustomer();
@@ -291,37 +328,76 @@ $(document).ready(function() {
     });
     
     function searchCustomer() {
-        let mobile = $('#mobile').val().trim();
+        // let mobile = $('#mobile').val().trim();
+        let name = $('#customer_search').val().trim();
         
-        if (mobile.length !== 10) {
-            alert('Please enter 10-digit mobile number');
-            $('#mobile').focus();
+        // if (mobile.length !== 10) {
+        //     alert('Please enter 10-digit mobile number');
+        //     $('#mobile').focus();
+        //     return;
+        // }
+        if (name.length < 2) {
+            alert('Please enter at least 2 letters of the customer name');
+            $('#customer_search').focus();
             return;
         }
         
         $.ajax({
             url: baseUrl + '/modules/party/ajax_search.php',
             method: 'POST',
-            data: { mobile: mobile },
+            // data: { mobile: mobile },
+            data: { name: name },
             dataType: 'json',
             success: function(data) {
-                $('#customerDetailsForm').show();
-                $('#party_name').focus();
-                
+                // $('#customerDetailsForm').show();
+                // $('#party_name').focus();
+                console.log(data.found);
                 if (data.found) {
-                    $('#party_name').val(data.name);
-                    $('#party_notes').val(data.notes || '');
-                    alert('✓ Customer found: ' + data.name + '\n\nClick "Lock Customer" to continue.');
+                    // $('#party_name').val(data.name);
+                    // $('#party_notes').val(data.notes || '');
+                    let results = '';
+                    data.customers.forEach(function(customer) {
+                        let mobile = customer.mobile || 'No mobile';
+                        results += '<button type="button" class="list-group-item list-group-item-action customer-result" data-customer=\'' + JSON.stringify(customer).replace(/'/g, '&#39;') + '\'><strong>' + escapeHtml(customer.name) + '</strong><br><small>' + escapeHtml(mobile) + '</small></button>';
+                    });
+                    $('#customerSearchResults').html(results);
+                    // alert('✓ Customer found: ' + data.name + '\n\nClick "Lock Customer" to continue.');
                 } else {
-                    $('#party_name').val('');
-                    $('#party_notes').val('');
-                    alert('New customer! Enter name and click "Lock Customer".');
+                    // $('#party_name').val('');
+                    // $('#party_notes').val('');
+                    // alert('New customer! Enter name and click "Lock Customer".');
+                    prepareNewCustomer(name);
+                    $('#customerSearchResults').html('<div class="alert alert-info">No customer found. Complete the details below to create a new customer.</div>');
                 }
             },
             error: function() {
                 alert('Error searching customer');
             }
         });
+    }
+    
+    $(document).on('click', '.customer-result', function() {
+        let customer = $(this).data('customer');
+        $('#party_id').val(customer.id);
+        $('#party_name').val(customer.name).prop('readonly', true);
+        $('#mobile').val(customer.mobile || '').prop('readonly', true);
+        $('#party_notes').val(customer.notes || '').prop('readonly', true);
+        $('#customerDetailsForm').show();
+        $('.customer-result').removeClass('active');
+        $(this).addClass('active');
+    });
+
+    function prepareNewCustomer(name) {
+                    $('#party_id').val('0');
+                    $('#party_name').val(name).prop('readonly', false);
+                    $('#mobile').val('').prop('readonly', false);
+                    $('#party_notes').val('');
+                    $('#customerDetailsForm').show();
+                    $('#party_name').focus();
+    }
+
+    function escapeHtml(value) {
+        return $('<div>').text(value || '').html();
     }
     
     // Search product
@@ -336,7 +412,7 @@ $(document).ready(function() {
     function searchProduct() {
         let code = $('#product_code').val().toUpperCase().trim();
         $('#product_code').val(code);
-        var bill_discount = $('#bill_discount').val();
+        // var bill_discount = $('#bill_discount').val();
         
         if (code.length < 6) {
             alert('Enter complete product code (e.g., PY000001)');
@@ -399,8 +475,9 @@ $(document).ready(function() {
     $('#size_id').val('');
     $('#size_select').val('');
     $('#quantity').val('1');
-    $('#discount').val('0');
-    $('#bill_discount').val(bill_discount);
+    // $('#discount').val('0');
+    // $('#bill_discount').val(bill_discount);
+    $('#discount_percent').val('0');
     $('#productDetailsSection').hide();
     $('#product_code').focus();
     <?php endif; ?>
@@ -422,9 +499,13 @@ function updateBillDiscount() {
 
     // $("#grand_total").html("₹" + total.toFixed(2));
     let subtotal = parseFloat($("#subtotal_amount").data("subtotal"));
-    let billDiscount = parseFloat($("#bill_discount").val()) || 0;
+    // let billDiscount = parseFloat($("#bill_discount").val()) || 0;
+    let itemDiscount = parseFloat($("#subtotal_amount").data("item-discount")) || 0;
+    let billDiscountPercent = Math.min(100, Math.max(0, parseFloat($("#bill_discount_percent").val()) || 0));
+    let billDiscount = (subtotal - itemDiscount) * billDiscountPercent / 100;
     
-    let total = subtotal - billDiscount;
+    // let total = subtotal - billDiscount;
+    let total = subtotal - itemDiscount - billDiscount;
     
     if (total < 0)
         total = 0;
@@ -432,7 +513,8 @@ function updateBillDiscount() {
     $("#grand_total").html("₹" + total.toFixed(2));
 }
 
-$("#bill_discount").on("input", updateBillDiscount);
+// $("#bill_discount").on("input", updateBillDiscount);
+$("#bill_discount_percent").on("input", updateBillDiscount);
 
 updateBillDiscount();
 </script>

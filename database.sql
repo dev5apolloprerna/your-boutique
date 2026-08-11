@@ -91,7 +91,8 @@ CREATE TABLE IF NOT EXISTS stock_transactions (
 -- Parties (Customers)
 CREATE TABLE IF NOT EXISTS parties (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    mobile VARCHAR(15) UNIQUE NOT NULL,
+    -- mobile VARCHAR(15) UNIQUE NOT NULL,
+    mobile VARCHAR(15) UNIQUE NULL,
     party_name VARCHAR(100) NOT NULL,
     address TEXT,
     notes TEXT,

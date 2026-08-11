@@ -14,17 +14,68 @@ if (!isset($_SESSION['invoice_customer'])) {
 
 // Handle customer lock
 if (isset($_POST['lock_customer'])) {
-    $mobile = sanitize($_POST['mobile']);
-    $name = sanitize($_POST['party_name']);
+    // $mobile = sanitize($_POST['mobile']);
+    // $name = sanitize($_POST['party_name']);
+    $partyId = intval($_POST['party_id'] ?? 0);
+    $mobile = sanitize($_POST['mobile'] ?? '');
+    $name = sanitize($_POST['party_name'] ?? '');
     $notes = sanitize($_POST['party_notes'] ?? '');
     
-    $_SESSION['invoice_customer'] = [
-        'mobile' => $mobile,
-        'name' => $name,
-        'notes' => $notes
-    ];
+    // $_SESSION['invoice_customer'] = [
+    //     'mobile' => $mobile,
+    //     'name' => $name,
+    //     'notes' => $notes
+    // ];
     
-    setFlashMessage('success', 'Customer locked! Now add products.');
+    // setFlashMessage('success', 'Customer locked! Now add products.');
+    
+     if ($partyId > 0) {
+        $partyStmt = $conn->prepare('SELECT id, party_name, mobile, notes FROM parties WHERE id = ?');
+        $partyStmt->bind_param('i', $partyId);
+        $partyStmt->execute();
+        $party = $partyStmt->get_result()->fetch_assoc();
+    } else {
+        $party = null;
+    }
+
+    if ($party) {
+        $_SESSION['invoice_customer'] = [
+            'party_id' => (int) $party['id'],
+            'mobile' => $party['mobile'],
+            'name' => $party['party_name'],
+            'notes' => $party['notes']
+        ];
+        setFlashMessage('success', 'Customer selected! Now add products.');
+    } elseif ($name === '') {
+        setFlashMessage('error', 'Please enter a customer name');
+    } elseif ($mobile !== '' && !isValidMobile($mobile)) {
+        setFlashMessage('error', 'Please enter a valid 10-digit mobile number or leave it blank');
+    } else {
+        if ($mobile !== '') {
+            $duplicateStmt = $conn->prepare('SELECT id FROM parties WHERE mobile = ?');
+            $duplicateStmt->bind_param('s', $mobile);
+            $duplicateStmt->execute();
+            $duplicateMobile = $duplicateStmt->get_result()->num_rows > 0;
+        } else {
+            $duplicateMobile = false;
+        }
+
+        if ($duplicateMobile) {
+            setFlashMessage('error', 'That mobile number is already assigned to another customer');
+        } else {
+            $mobileValue = $mobile === '' ? null : $mobile;
+            $insertStmt = $conn->prepare('INSERT INTO parties (mobile, party_name, notes) VALUES (?, ?, ?)');
+            $insertStmt->bind_param('sss', $mobileValue, $name, $notes);
+            $insertStmt->execute();
+            $_SESSION['invoice_customer'] = [
+                'party_id' => $conn->insert_id,
+                'mobile' => $mobileValue,
+                'name' => $name,
+                'notes' => $notes
+            ];
+            setFlashMessage('success', 'New customer created! Now add products.');
+        }
+    }
     header('Location: create_invoice.php');
     exit();
 }
@@ -50,8 +101,9 @@ if (isset($_POST['add_to_cart'])) {
     $productId = intval($_POST['product_id']);
     $sizeId = intval($_POST['size_id']);
     $quantity = intval($_POST['quantity']);
-    $discount = floatval($_POST['discount'] ?? 0);
-    $_SESSION['bill_discount'] = floatval($_POST['bill_discount'] ?? 0);
+    // $discount = floatval($_POST['discount'] ?? 0);
+    // $_SESSION['bill_discount'] = floatval($_POST['bill_discount'] ?? 0);
+    $discountPercent = min(100, max(0, floatval($_POST['discount_percent'] ?? 0)));
     // Get product details
     $sql = "SELECT p.*, s.size_name FROM products p, sizes s 
             WHERE p.id = ? AND s.id = ?";
@@ -83,7 +135,7 @@ if (isset($_POST['add_to_cart'])) {
                 'quantity' => $quantity,
                 'mrp' => $item['mrp'],
                 'gst_rate' => $item['gst_rate'],
-                'discount' => $discount
+                'discount_percent' => $discountPercent //'discount' => $discount
             ];
             setFlashMessage('success', 'Product added! Add more or generate invoice.');
         } else {
@@ -109,7 +161,8 @@ if (isset($_GET['remove'])) {
 if (isset($_POST['generate_invoice'])) {
     
     $paymentMode = sanitize($_POST['payment_mode']);
-    $billDiscount = floatval($_POST['bill_discount'] ?? 0);
+    // $billDiscount = floatval($_POST['bill_discount'] ?? 0);
+    $billDiscountPercent = min(100, max(0, floatval($_POST['bill_discount_percent'] ?? 0)));
     
     // Get customer from session
     $customer = $_SESSION['invoice_customer'];
@@ -117,36 +170,43 @@ if (isset($_POST['generate_invoice'])) {
     if (empty($customer) || empty($_SESSION['invoice_cart'])) {
         setFlashMessage('error', 'Please lock customer and add items to cart');
     } else {
-        $mobile = $customer['mobile'];
-        $partyName = $customer['name'];
+        // $mobile = $customer['mobile'];
+        // $partyName = $customer['name'];
+        $partyId = intval($customer['party_id'] ?? 0);
         $notes = $customer['notes'];
-        $address='';
+        // $address='';
         $conn->begin_transaction();
         
         try {
             // Get or create party
-            $partySql = "SELECT id FROM parties WHERE mobile = ?";
+            // $partySql = "SELECT id FROM parties WHERE mobile = ?";
+            // Confirm the selected party still exists.
+            $partySql = "SELECT id FROM parties WHERE id = ?";
             $partyStmt = $conn->prepare($partySql);
-            $partyStmt->bind_param('s', $mobile);
+            // $partyStmt->bind_param('s', $mobile);
+            $partyStmt->bind_param('i', $partyId);
             $partyStmt->execute();
             $partyResult = $partyStmt->get_result();
             
-            if ($partyResult->num_rows > 0) {
-                $party = $partyResult->fetch_assoc();
-                $partyId = $party['id'];
+            // if ($partyResult->num_rows > 0) {
+            //     $party = $partyResult->fetch_assoc();
+            //     $partyId = $party['id'];
                 
-                // Update party details
-                $updatePartySql = "UPDATE parties SET party_name = ?, address = ?, notes = ? WHERE id = ?";
-                $updateStmt = $conn->prepare($updatePartySql);
-                $updateStmt->bind_param('sssi', $partyName, $address, $notes, $partyId);
-                $updateStmt->execute();
-            } else {
-                // Insert new party
-                $insertPartySql = "INSERT INTO parties (mobile, party_name, address, notes) VALUES (?, ?, ?, ?)";
-                $insertStmt = $conn->prepare($insertPartySql);
-                $insertStmt->bind_param('ssss', $mobile, $partyName, $address, $notes);
-                $insertStmt->execute();
-                $partyId = $conn->insert_id;
+            //     // Update party details
+            //     $updatePartySql = "UPDATE parties SET party_name = ?, address = ?, notes = ? WHERE id = ?";
+            //     $updateStmt = $conn->prepare($updatePartySql);
+            //     $updateStmt->bind_param('sssi', $partyName, $address, $notes, $partyId);
+            //     $updateStmt->execute();
+            // } else {
+            //     // Insert new party
+            //     $insertPartySql = "INSERT INTO parties (mobile, party_name, address, notes) VALUES (?, ?, ?, ?)";
+            //     $insertStmt = $conn->prepare($insertPartySql);
+            //     $insertStmt->bind_param('ssss', $mobile, $partyName, $address, $notes);
+            //     $insertStmt->execute();
+            //     $partyId = $conn->insert_id;
+            // }
+            if ($partyResult->num_rows === 0) {
+                throw new Exception('Selected customer no longer exists');
             }
             
             // Calculate invoice totals
@@ -171,8 +231,14 @@ if (isset($_POST['generate_invoice'])) {
                 $subtotal += $item['mrp'] * $item['quantity'];
             }
             
+            // $totalDiscount = $billDiscount;
+            // $taxableAmount = $subtotal - $billDiscount;
             $totalDiscount = $billDiscount;
+            $discountPercentage = $subtotal > 0
+                ? round(($totalDiscount / $subtotal) * 100, 2)
+                : 0;
             $taxableAmount = $subtotal - $billDiscount;
+            // $totalDiscount = 0;
             
             // Calculate GST for each item
             foreach ($_SESSION['invoice_cart'] as &$item) {
@@ -206,7 +272,12 @@ if (isset($_POST['generate_invoice'])) {
                 $basePerUnit = $gstBreakdown['base_amount'];
                 
                 $itemBase = $basePerUnit * $item['quantity'];
-                $itemDiscounted = $itemTotal;
+                // $itemDiscounted = $itemTotal;
+                $itemLevelDiscount = round($itemTotal * (floatval($item['discount_percent'] ?? 0) / 100), 2);
+                $billDiscountShare = round(($itemTotal - $itemLevelDiscount) * ($billDiscountPercent / 100), 2);
+                $item['bill_discount'] = $itemLevelDiscount + $billDiscountShare;
+                $itemDiscounted = $itemTotal - $item['bill_discount'];
+                $totalDiscount += $item['bill_discount'];
                 $discountedBase = $itemDiscounted / (1 + ($item['gst_rate'] / 100));
                 
                 $cgst = ($discountedBase * ($item['gst_rate'] / 2)) / 100;
@@ -221,7 +292,7 @@ if (isset($_POST['generate_invoice'])) {
                 $totalSGST += $sgst;
                 $grandTotal += $itemDiscounted;
             }
-            $grandTotal -= $totalDiscount;
+            // $grandTotal -= $totalDiscount;
             // Generate invoice number
             $invoiceNo = generateInvoiceNumber($conn);
             $invoiceDate = date('Y-m-d');
@@ -258,6 +329,7 @@ if (isset($_POST['generate_invoice'])) {
             // Clear cart and customer session
             $_SESSION['invoice_cart'] = [];
             $_SESSION['invoice_customer'] = null;
+            $_SESSION['bill_discount_percent'] = 0;
             
             setFlashMessage('success', 'Invoice generated successfully!');
             header('Location: view.php?invoice=' . $invoiceNo);
@@ -286,9 +358,13 @@ $cartSummary = [
 // }
 foreach ($_SESSION['invoice_cart'] as $item) {
     $cartSummary['subtotal'] += $item['mrp'] * $item['quantity'];
+    $itemGross = $item['mrp'] * $item['quantity'];
+    $cartSummary['discount'] += round($itemGross * (floatval($item['discount_percent'] ?? 0) / 100), 2);
 }
 
-$cartSummary['discount'] = floatval($_SESSION['bill_discount'] ?? 0);
+// $cartSummary['discount'] = floatval($_SESSION['bill_discount'] ?? 0);
+$billDiscountPercent = min(100, max(0, floatval($_SESSION['bill_discount_percent'] ?? 0)));
+$cartSummary['discount'] += round(($cartSummary['subtotal'] - $cartSummary['discount']) * ($billDiscountPercent / 100), 2);
 $cartSummary['total'] = $cartSummary['subtotal'] - $cartSummary['discount'];
 ?>
 

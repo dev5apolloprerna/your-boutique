@@ -55,7 +55,7 @@ if ($result->num_rows > 0) {
         'stock_qty'    => $item['quantity'],   // Available stock
         'mrp'          => $item['mrp'],
         'gst_rate'     => $item['gst_rate'],
-	    'discount' => 0
+	    'discount_percent' => 0
     ];
     echo json_encode([
     'found' => true,

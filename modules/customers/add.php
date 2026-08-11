@@ -9,24 +9,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $mobile = sanitize($_POST['mobile'] ?? '');
     $notes = sanitize($_POST['notes'] ?? '');
     
-    if (empty($partyName) || empty($mobile)) {
-        setFlashMessage('error', 'Name and Mobile are required');
-    } elseif (!isValidMobile($mobile)) {
-        setFlashMessage('error', 'Please enter a valid 10-digit mobile number');
+    // if (empty($partyName) || empty($mobile)) {
+    //     setFlashMessage('error', 'Name and Mobile are required');
+    // } elseif (!isValidMobile($mobile)) {
+    //     setFlashMessage('error', 'Please enter a valid 10-digit mobile number');
+    if (empty($partyName)) {
+        setFlashMessage('error', 'Customer name is required');
+    } elseif ($mobile !== '' && !isValidMobile($mobile)) {
+        setFlashMessage('error', 'Please enter a valid 10-digit mobile number or leave it blank');
     } else {
         // Check if mobile already exists
-        $checkSql = "SELECT id FROM parties WHERE mobile = ?";
-        $stmt = $conn->prepare($checkSql);
-        $stmt->bind_param('s', $mobile);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        // $checkSql = "SELECT id FROM parties WHERE mobile = ?";
+        // $stmt = $conn->prepare($checkSql);
+        // $stmt->bind_param('s', $mobile);
+        // $stmt->execute();
+        // $result = $stmt->get_result();
         
-        if ($result->num_rows > 0) {
+        $result = null;
+        if ($mobile !== '') {
+            $checkSql = "SELECT id FROM parties WHERE mobile = ?";
+            $stmt = $conn->prepare($checkSql);
+            $stmt->bind_param('s', $mobile);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        }
+        
+        if ($result && $result->num_rows > 0) { // if ($result->num_rows > 0) {
             setFlashMessage('error', 'Mobile number already exists');
         } else {
             $sql = "INSERT INTO parties (party_name, mobile, notes) VALUES (?, ?, ?)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param('sss', $partyName, $mobile, $notes);
+            // $stmt->bind_param('sss', $partyName, $mobile, $notes);
+            $mobileValue = $mobile === '' ? null : $mobile;
+            $stmt->bind_param('sss', $partyName, $mobileValue, $notes);
             
             if ($stmt->execute()) {
                 setFlashMessage('success', 'Customer added successfully');
@@ -67,10 +82,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     
                     <div class="mb-3">
-                        <label for="mobile" class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                        <!--<label for="mobile" class="form-label">Mobile Number <span class="text-danger">*</span></label>-->
+                        <label for="mobile" class="form-label">Mobile Number (Optional)</label>
                         <input type="text" class="form-control mobile-input number-only" id="mobile" name="mobile" 
-                               placeholder="10-digit mobile" maxlength="10" required>
-                        <small class="text-muted">Must be unique 10-digit number</small>
+                                placeholder="10-digit mobile" maxlength="10">
+                        <small class="text-muted">If provided, it must be a unique 10-digit number</small>
+                        <!--       placeholder="10-digit mobile" maxlength="10" required>-->
+                        <!--<small class="text-muted">Must be unique 10-digit number</small>-->
                     </div>
                     
                     <div class="mb-3">
@@ -97,7 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="card-body">
                 <h6><i class="bi bi-lightbulb"></i> Tips:</h6>
                 <ul>
-                    <li>Mobile number must be unique</li>
+                    <!--<li>Mobile number must be unique</li>-->
+                    <li>Mobile number is optional, but must be unique when provided</li>
                     <li>Address field removed - not required</li>
                     <li>Use notes for any special information</li>
                     <li>Customer details auto-fill during invoice</li>

@@ -221,7 +221,8 @@ while ($row = $itemsResult->fetch_assoc()) {
                             <i class="bi bi-x-circle"></i> Cancel - Go Back
                         </a>
                         <button type="submit" class="btn btn-danger btn-lg" 
-                                onclick="return confirm('FINAL CONFIRMATION\n\nAre you absolutely sure you want to DELETE this invoice?\n\nInvoice: <?php echo $invoiceNo; ?>\nAmount: <?php echo formatCurrency($invoice['total_amount']); ?>\n\nType YES to confirm:') && prompt('Type DELETE to confirm:', '') === 'DELETE';">
+                                onclick="return confirm('FINAL CONFIRMATION\n\nAre you absolutely sure you want to DELETE this invoice?\n\nInvoice: <?php echo $invoiceNo; ?>\nAmount: <?php echo formatCurrency($invoice['total_amount']); ?>\n\n')">
+                                <!--onclick="return confirm('FINAL CONFIRMATION\n\nAre you absolutely sure you want to DELETE this invoice?\n\nInvoice: <?php echo $invoiceNo; ?>\nAmount: <?php echo formatCurrency($invoice['total_amount']); ?>\n\nType YES to confirm:') && prompt('Type DELETE to confirm:', '') === 'DELETE';">-->
                             <i class="bi bi-trash"></i> Yes, Delete Invoice Permanently
                         </button>
                     </div>
