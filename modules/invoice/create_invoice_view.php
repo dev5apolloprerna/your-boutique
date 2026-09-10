@@ -284,6 +284,28 @@ $customer = $_SESSION['invoice_customer'];
                             <td class="text-end"><strong id="grand_total"><?php echo number_format($cartSummary['subtotal'] - $cartSummary['discount'],2); ?></strong></td>
                         </tr>
                     </table>
+
+                    <?php if (!empty($availableCreditNotes)): ?>
+                    <div class="mb-3">
+                        <label for="credit_note_id" class="form-label">Apply Credit Note</label>
+                        <select class="form-select" id="credit_note_id" name="credit_note_id">
+                            <option value="" data-balance="0">Do not apply</option>
+                            <?php foreach ($availableCreditNotes as $availableCreditNote): ?>
+                            <option value="<?php echo (int) $availableCreditNote['id']; ?>"
+                                    data-balance="<?php echo number_format($availableCreditNote['available_amount'], 2, '.', ''); ?>">
+                                <?php echo htmlspecialchars($availableCreditNote['credit_note_no']); ?>
+                                (available: <?php echo formatCurrency($availableCreditNote['available_amount']); ?>)
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="input-group mt-2" id="credit_note_amount_group" style="display:none;">
+                            <span class="input-group-text">Use ₹</span>
+                            <input type="number" class="form-control" id="credit_note_amount" name="credit_note_amount"
+                                   min="0.01" step="0.01" value="0">
+                        </div>
+                        <div class="form-text">Unused balance remains available for another invoice.</div>
+                    </div>
+                    <?php endif; ?>
                     
                     <div class="mb-3" id="payments_section">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -301,7 +323,7 @@ $customer = $_SESSION['invoice_customer'];
                                 </select>
                                 <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control payment-amount" name="payment_amounts[]"
-                                       min="0.01" step="0.01" required aria-label="Payment amount">
+                                       min="0" step="0.01" required aria-label="Payment amount">
                                 <button type="button" class="btn btn-outline-danger remove-payment" aria-label="Remove payment" disabled>
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -562,7 +584,8 @@ function updatePaymentBalance() {
     $('.payment-amount').each(function() {
         paid += parseFloat($(this).val()) || 0;
     });
-    let balance = invoiceTotal() - paid;
+    let credit = parseFloat($('#credit_note_amount').val()) || 0;
+    let balance = invoiceTotal() - paid - credit;
     let balanced = Math.abs(balance) < 0.01;
     $('#payment_balance')
         .toggleClass('text-success', balanced)
@@ -571,6 +594,25 @@ function updatePaymentBalance() {
     $('.remove-payment').prop('disabled', $('.payment-row').length === 1);
     $('#add_payment').prop('disabled', $('.payment-row').length >= 3);
 }
+
+$('#credit_note_id').on('change', function() {
+    let balance = parseFloat($(this).find(':selected').data('balance')) || 0;
+    let amount = Math.min(balance, invoiceTotal());
+    $('#credit_note_amount_group').toggle(balance > 0);
+    $('#credit_note_amount').attr('max', amount.toFixed(2)).val(balance > 0 ? amount.toFixed(2) : '0');
+    if ($('.payment-row').length === 1) {
+        $('.payment-amount').val(Math.max(0, invoiceTotal() - amount).toFixed(2));
+    }
+    updatePaymentBalance();
+});
+
+$(document).on('input', '#credit_note_amount', function() {
+    if ($('.payment-row').length === 1) {
+        let credit = parseFloat($(this).val()) || 0;
+        $('.payment-amount').val(Math.max(0, invoiceTotal() - credit).toFixed(2));
+    }
+    updatePaymentBalance();
+});
 
 $('#add_payment').on('click', function() {
     let remaining = invoiceTotal();

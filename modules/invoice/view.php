@@ -37,6 +37,20 @@ $paymentsStmt->execute();
 $paymentsResult = $paymentsStmt->get_result();
 $payments = $paymentsResult->fetch_all(MYSQLI_ASSOC);
 
+$creditPaymentsSql = "SELECT cn.credit_note_no, cna.amount
+                      FROM credit_note_applications cna
+                      INNER JOIN credit_notes cn ON cn.id = cna.credit_note_id
+                      WHERE cna.invoice_id = ? ORDER BY cna.id";
+$creditPaymentsStmt = $conn->prepare($creditPaymentsSql);
+$creditPaymentsStmt->bind_param('i', $invoice['id']);
+$creditPaymentsStmt->execute();
+foreach ($creditPaymentsStmt->get_result()->fetch_all(MYSQLI_ASSOC) as $creditPayment) {
+    $payments[] = [
+        'payment_mode' => 'Credit Note ' . $creditPayment['credit_note_no'],
+        'amount' => $creditPayment['amount']
+    ];
+}
+
 // Get invoice items
 $itemsSql = "SELECT 
                 ii.*, 

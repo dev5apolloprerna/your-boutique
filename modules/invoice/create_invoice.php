@@ -159,7 +159,9 @@ if (isset($_GET['remove'])) {
 
 // Handle invoice generation
 if (isset($_POST['generate_invoice'])) {
-    
+
+    $creditNoteId = intval($_POST['credit_note_id'] ?? 0);
+    $requestedCreditAmount = round(floatval($_POST['credit_note_amount'] ?? 0), 2);    
     $allowedPaymentModes = ['Cash', 'Card', 'UPI'];
     $postedPaymentModes = $_POST['payment_modes'] ?? [];
     $postedPaymentAmounts = $_POST['payment_amounts'] ?? [];
@@ -308,15 +310,43 @@ if (isset($_POST['generate_invoice'])) {
             }
             unset($item);
 
-            $paymentTotal = round(array_sum(array_column($payments, 'amount')), 2);
-            if (empty($payments)) {
-                throw new Exception('Please add at least one payment');
+            $creditAmount = 0;
+            $selectedCreditNote = null;
+            if ($creditNoteId > 0) {
+                $creditSql = "SELECT cn.id, cn.credit_note_no, cn.total_amount,
+                                    cn.total_amount - COALESCE(SUM(cna.amount), 0) AS available_amount
+                              FROM credit_notes cn
+                              LEFT JOIN credit_note_applications cna ON cna.credit_note_id = cn.id
+                              WHERE cn.id = ? AND cn.party_id = ? AND cn.refund_mode = 'Exchange'
+                              GROUP BY cn.id, cn.credit_note_no, cn.total_amount
+                              FOR UPDATE";
+                $creditStmt = $conn->prepare($creditSql);
+                $creditStmt->bind_param('ii', $creditNoteId, $partyId);
+                $creditStmt->execute();
+                $selectedCreditNote = $creditStmt->get_result()->fetch_assoc();
+
+                if (!$selectedCreditNote || (float) $selectedCreditNote['available_amount'] <= 0) {
+                    throw new Exception('Selected credit note has no available balance');
+                }
+
+                $availableCreditAmount = round((float) $selectedCreditNote['available_amount'], 2);
+                $creditAmount = $requestedCreditAmount;
+                if ($creditAmount <= 0 || $creditAmount > $availableCreditAmount || $creditAmount > round($grandTotal, 2)) {
+                    throw new Exception('Enter a valid credit note amount');
+                }
+            }
+
+            $paymentTotal = round(array_sum(array_column($payments, 'amount')) + $creditAmount, 2);
+            if (empty($payments) && $creditAmount <= 0) {
+                throw new Exception('Please add at least one payment or credit note');
             }
             if (abs($paymentTotal - round($grandTotal, 2)) > 0.01) {
                 throw new Exception('Payment total must equal invoice total of ' . number_format($grandTotal, 2));
             }
 
-            $paymentMode = count($payments) > 1 ? 'Split' : $payments[0]['mode'];
+            $paymentMode = $creditAmount > 0
+                ? (empty($payments) ? 'Credit Note' : 'Split')
+                : (count($payments) > 1 ? 'Split' : $payments[0]['mode']);
             // $grandTotal -= $totalDiscount;
             // Generate invoice number
             $invoiceNo = generateInvoiceNumber($conn);
@@ -330,6 +360,14 @@ if (isset($_POST['generate_invoice'])) {
             $invoiceStmt->bind_param('ssidddddssi', $invoiceNo, $invoiceDate, $partyId, $subtotal, $totalDiscount, $totalCGST, $totalSGST, $grandTotal, $paymentMode, $notes, $userId);
             $invoiceStmt->execute();
             $invoiceId = $conn->insert_id;
+
+            if ($creditAmount > 0) {
+                $applicationSql = "INSERT INTO credit_note_applications (credit_note_id, invoice_id, amount, created_by)
+                                   VALUES (?, ?, ?, ?)";
+                $applicationStmt = $conn->prepare($applicationSql);
+                $applicationStmt->bind_param('iidi', $creditNoteId, $invoiceId, $creditAmount, $userId);
+                $applicationStmt->execute();
+            }
             
             $paymentSql = "INSERT INTO invoice_payments (invoice_id, payment_mode, amount) VALUES (?, ?, ?)";
             $paymentStmt = $conn->prepare($paymentSql);
@@ -399,6 +437,22 @@ foreach ($_SESSION['invoice_cart'] as $item) {
 $billDiscountPercent = min(100, max(0, floatval($_SESSION['bill_discount_percent'] ?? 0)));
 $cartSummary['discount'] += round(($cartSummary['subtotal'] - $cartSummary['discount']) * ($billDiscountPercent / 100), 2);
 $cartSummary['total'] = $cartSummary['subtotal'] - $cartSummary['discount'];
+
+$availableCreditNotes = [];
+if (!empty($_SESSION['invoice_customer']['party_id'])) {
+    $creditListSql = "SELECT cn.id, cn.credit_note_no, cn.credit_date,
+                            cn.total_amount - COALESCE(SUM(cna.amount), 0) AS available_amount
+                      FROM credit_notes cn
+                      LEFT JOIN credit_note_applications cna ON cna.credit_note_id = cn.id
+                      WHERE cn.party_id = ? AND cn.refund_mode = 'Exchange'
+                      GROUP BY cn.id, cn.credit_note_no, cn.credit_date, cn.total_amount
+                      HAVING available_amount > 0
+                      ORDER BY cn.credit_date, cn.id";
+    $creditListStmt = $conn->prepare($creditListSql);
+    $creditListStmt->bind_param('i', $_SESSION['invoice_customer']['party_id']);
+    $creditListStmt->execute();
+    $availableCreditNotes = $creditListStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
 ?>
 
 <?php require_once __DIR__ . '/create_invoice_view.php'; 
