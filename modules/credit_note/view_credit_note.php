@@ -31,9 +31,10 @@ if ($result->num_rows === 0) {
 $creditNote = $result->fetch_assoc();
 
 // Get credit note items
-$itemsSql = "SELECT cni.*, p.product_code, p.product_name, s.size_name
+$itemsSql = "SELECT cni.*, p.product_code, p.product_name, c.category_name, c.hsn_code, s.size_name
              FROM credit_note_items cni
              INNER JOIN products p ON cni.product_id = p.id
+             LEFT JOIN categories c ON p.category_id = c.id  
              INNER JOIN sizes s ON cni.size_id = s.id
              WHERE cni.credit_note_id = ?
              ORDER BY cni.id";
@@ -297,14 +298,13 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
     <table class="cn-items">
         <colgroup>
             <col style="width: 5%">
-            <col style="width: 12%">
-            <col style="width: 23%">
+            <col style="width: 13%">
+            <col style="width: 24%">
             <col style="width: 6%">
             <col style="width: 11%">
-            <col style="width: 7%">
-            <col style="width: 9%">
-            <col style="width: 7%">
-            <col style="width: 9%">
+            <col style="width: 10%">
+            <col style="width: 10%">
+            <col style="width: 10%">
             <col style="width: 11%">
         </colgroup>
         <thead>
@@ -313,11 +313,10 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
                 <th>Item Code</th>
                 <th>Particular</th>
                 <th>Qty</th>
-                <th>Taxable</th>
-                <th>CGST %</th>
-                <th>CGST Amt</th>
-                <th>SGST %</th>
-                <th>SGST Amt</th>
+                <th>Rate</th>
+                <th>HSN Code</th>
+                <th>I/CGST Amt</th>
+                <th>S/CGST Amt</th>
                 <th>Total</th>
             </tr>
         </thead>
@@ -326,12 +325,11 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
                 <tr>
                     <td class="cn-center"><?php echo $index + 1; ?></td>
                     <td><?php echo htmlspecialchars($item['product_code']); ?></td>
-                    <td><strong><?php echo htmlspecialchars(strtoupper($item['product_name'])); ?></strong><br><small>Size: <?php echo htmlspecialchars($item['size_name']); ?></small></td>
+                    <td><strong><?php echo !empty($item['category_name']) ? htmlspecialchars(strtoupper($item['category_name'])) . ' - ' : ''; ?><?php echo htmlspecialchars(strtoupper($item['product_name'])); ?></strong><br><small>Size: <?php echo htmlspecialchars($item['size_name']); ?></small></td>
                     <td class="cn-center"><strong><?php echo (int) $item['quantity']; ?></strong></td>
                     <td class="cn-right"><?php echo number_format($item['base_amount'], 2); ?></td>
-                    <td class="cn-center"><?php echo number_format($item['gst_rate'] / 2, 2); ?></td>
+                    <td class="cn-center"><strong><?php echo htmlspecialchars($item['hsn_code'] ?? '-'); ?></strong></td>
                     <td class="cn-right"><?php echo number_format($item['cgst_amount'], 2); ?></td>
-                    <td class="cn-center"><?php echo number_format($item['gst_rate'] / 2, 2); ?></td>
                     <td class="cn-right"><?php echo number_format($item['sgst_amount'], 2); ?></td>
                     <td class="cn-right"><strong><?php echo number_format($item['total_amount'], 2); ?></strong></td>
                 </tr>
@@ -347,7 +345,6 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td></td>
                 </tr>
             <?php endfor; ?>
             <tr>
@@ -355,12 +352,11 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
                 <td class="cn-right"><?php echo number_format(array_sum(array_column($items, 'base_amount')), 2); ?></td>
                 <td></td>
                 <td class="cn-right"><?php echo number_format($creditNote['cgst_amount'], 2); ?></td>
-                <td></td>
                 <td class="cn-right"><?php echo number_format($creditNote['sgst_amount'], 2); ?></td>
                 <td class="cn-right"><strong><?php echo number_format($creditNote['total_amount'], 2); ?></strong></td>
             </tr>
             <tr class="cn-total-row">
-                <td colspan="9" class="cn-right">Credit Amount:</td>
+                <td colspan="8" class="cn-right">Credit Amount:</td>
                 <td class="cn-right"><?php echo number_format($creditNote['total_amount'], 2); ?></td>
             </tr>
         </tbody>
