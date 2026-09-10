@@ -44,7 +44,7 @@ $result = $conn->query($sql);
                             <td><strong><?php echo $row['credit_note_no']; ?></strong></td>
                             <td><?php echo formatDate($row['credit_date']); ?></td>
                             <td>
-                                <a href="/modules/invoice/view.php?invoice=<?php echo $row['invoice_no']; ?>">
+                                <a href="<?= $web_url ?>/modules/invoice/view.php?invoice=<?php echo $row['invoice_no']; ?>">
                                     <?php echo $row['invoice_no']; ?>
                                 </a>
                             </td>

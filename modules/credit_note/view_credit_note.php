@@ -99,24 +99,11 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
             margin-bottom: 8px;
         }
 
-        .cn-heading {
-            position: relative;
-            min-height: 35px;
-        }
-
         .cn-title {
-            position: absolute;
-            left: 0;
-            top: 10px;
+            float: left;
             font-size: 15px;
             font-weight: 700;
-        }
-
-        .cn-logo {
-            display: block;
-            max-width: 110px;
-            max-height: 42px;
-            margin: 0 auto;
+            margin: 5px 0;
         }
 
         .cn-company-details {
@@ -133,18 +120,18 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
             line-height: 1.3;
         }
 
-        .cn-info>div {
-            width: 50%;
+        .cn-info>div:first-child {
+            width: 60%;
         }
 
         .cn-info-right {
+            width: 38%;
             text-align: right;
         }
 
         .cn-items {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
             margin: 8px 0;
             font-size: 10px;
         }
@@ -154,7 +141,6 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
             border-right: .25px solid #000;
             padding: 4px 3px;
             vertical-align: top;
-            overflow-wrap: anywhere;
         }
 
         .cn-items th {
@@ -223,11 +209,11 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
 
         .cn-signature-line {
             display: inline-block;
-            width: 105px;
-            margin-top: 32px;
-            padding-top: 2px;
-            border-top: .5px solid #000;
+            width: 150px;
+            margin-top: 40px;
+            border-top: 1px solid #333;
             text-align: center;
+            font-size: 10px;
         }
 
         .cn-thanks {
@@ -281,10 +267,7 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
     </style>
 
     <div class="cn-header">
-        <div class="cn-heading">
-            <div class="cn-title">CREDIT NOTE</div>
-            <img src="../../assets/images/logo.png" alt="Payal Urban Stitch" class="cn-logo">
-        </div>
+        <div class="cn-title">CREDIT NOTE</div>
 
         <div class="cn-company-details">
             <strong>31/3 Tirupati Avenue, Pushpkunj Society Gate-4, Kankaria BRTS Road, Ahmedabad - 380008. M: 91065-31790</strong>
@@ -311,19 +294,19 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
 
     <table class="cn-items">
         <colgroup>
-            <col style="width: 5%">
-            <col style="width: 13%">
-            <col style="width: 24%">
-            <col style="width: 6%">
-            <col style="width: 11%">
-            <col style="width: 10%">
-            <col style="width: 10%">
-            <col style="width: 10%">
-            <col style="width: 11%">
+            <col style="width: 30px">
+            <col style="width: 80px">
+            <col>
+            <col style="width: 40px">
+            <col style="width: 50px">
+            <col style="width: 55px">
+            <col style="width: 50px">
+            <col style="width: 50px">
+            <col style="width: 60px">
         </colgroup>
         <thead>
             <tr>
-                <th>Sr.</th>
+                <th>Sr.No</th>
                 <th>Item Code</th>
                 <th>Particular</th>
                 <th>Qty</th>
@@ -339,7 +322,7 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
                 <tr>
                     <td class="cn-center"><?php echo $index + 1; ?></td>
                     <td><?php echo htmlspecialchars($item['product_code']); ?></td>
-                    <td><strong><?php echo !empty($item['category_name']) ? htmlspecialchars(strtoupper($item['category_name'])) . ' - ' : ''; ?><?php echo htmlspecialchars(strtoupper($item['product_name'])); ?></strong><br><small>Size: <?php echo htmlspecialchars($item['size_name']); ?></small></td>
+                    <td><strong><?php echo !empty($item['category_name']) ? htmlspecialchars(strtoupper($item['category_name'])) . ' - ' : ''; ?><?php echo htmlspecialchars(strtoupper($item['product_name'])); ?>&nbsp;&nbsp;<small>Size: <?php echo htmlspecialchars($item['size_name']); ?></small></strong></td>
                     <td class="cn-center"><strong><?php echo (int) $item['quantity']; ?></strong></td>
                     <td class="cn-right"><?php echo number_format($item['base_amount'], 2); ?></td>
                     <td class="cn-center"><strong><?php echo htmlspecialchars($item['hsn_code'] ?? '-'); ?></strong></td>
