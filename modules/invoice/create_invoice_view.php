@@ -113,7 +113,7 @@ $customer = $_SESSION['invoice_customer'];
                             <label for="product_code" class="form-label">Product Code <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="text" class="form-control text-uppercase" id="product_code" 
-                                       placeholder="E000001" required>
+                                       placeholder="E000001" required autofocus>
                                 <button type="button" class="btn btn-primary" id="searchProductBtn">
                                     <i class="bi bi-search"></i>
                                 </button>
@@ -360,6 +360,7 @@ $(document).ready(function() {
                         let mobile = customer.mobile || 'No mobile';
                         results += '<button type="button" class="list-group-item list-group-item-action customer-result" data-customer=\'' + JSON.stringify(customer).replace(/'/g, '&#39;') + '\'><strong>' + escapeHtml(customer.name) + '</strong><br><small>' + escapeHtml(mobile) + '</small></button>';
                     });
+                    results += '<button type="button" class="list-group-item list-group-item-action list-group-item-success new-customer-result"><i class="bi bi-person-plus"></i> <strong>Create new customer</strong><br><small>None of the customers above is the person you want</small></button>';
                     $('#customerSearchResults').html(results);
                     // alert('✓ Customer found: ' + data.name + '\n\nClick "Lock Customer" to continue.');
                 } else {
@@ -387,11 +388,18 @@ $(document).ready(function() {
         $(this).addClass('active');
     });
 
+    $(document).on('click', '.new-customer-result', function() {
+        prepareNewCustomer($('#customer_search').val().trim());
+        $('.customer-result, .new-customer-result').removeClass('active');
+        $(this).addClass('active');
+    });
+
+
     function prepareNewCustomer(name) {
                     $('#party_id').val('0');
                     $('#party_name').val(name).prop('readonly', false);
                     $('#mobile').val('').prop('readonly', false);
-                    $('#party_notes').val('');
+                    $('#party_notes').val('').prop('readonly', false);
                     $('#customerDetailsForm').show();
                     $('#party_name').focus();
     }
@@ -445,11 +453,8 @@ $(document).ready(function() {
                     //     alert('No stock available for this product!');
                     //     $('#productDetailsSection').hide();
                     // }
-                    
-                       $('#product_code').val('').focus();
-
-        // Reload page so cart refreshes
-        location.reload();
+                    // Reload the cart; the pageshow handler below restores focus.
+                    location.reload();
                 } else {
                     alert('Product Stock "' + code + '" not available!');
                     $('#product_name').val('');
@@ -481,8 +486,23 @@ $(document).ready(function() {
     $('#productDetailsSection').hide();
     $('#product_code').focus();
     <?php endif; ?>
+    
+    // Browsers can restore focus to the search button after a reload. Always
+    // return the cursor to the barcode/product-code box when billing is active.
+    <?php if ($customerLocked): ?>
+    window.setTimeout(function() {
+        $('#product_code').trigger('focus').select();
+    }, 0);
+    <?php endif; ?>
 });
 
+<?php if ($customerLocked): ?>
+window.addEventListener('pageshow', function() {
+    window.setTimeout(function() {
+        document.getElementById('product_code')?.focus();
+    }, 0);
+});
+<?php endif; ?>
 function updateBillDiscount() {
 
     // let subtotal = parseFloat($("#subtotal_amount").data("subtotal"));

@@ -48,6 +48,7 @@ $result = $conn->query($sql);
                             <tr>
                                 <th width="60">#</th>
                                 <th>Category Name</th>
+                                <th>HSN Code</th>
                                 <th>GST (%)</th>
                                 <th>Split</th>
                                 <th width="120">Sort Order</th>
@@ -65,6 +66,7 @@ $result = $conn->query($sql);
                                 <td>
                                     <strong><?php echo $row['category_name']; ?></strong>
                                 </td>
+                                <td><?php echo htmlspecialchars($row['hsn_code'] ?? ''); ?></td>
                                 <td>
                                     <strong><?php echo $row['gst_rate']; ?></strong>
                                 </td>
@@ -97,7 +99,7 @@ $result = $conn->query($sql);
                             
                             <?php if ($result->num_rows === 0): ?>
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">
+                                <td colspan="8" class="text-center py-4 text-muted">
                                     No categories found. Add your first category!
                                 </td>
                             </tr>

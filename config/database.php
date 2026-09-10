@@ -2,10 +2,14 @@
 ob_start();
 // Database Configuration
 define('DB_HOST', 'localhost');
-define('DB_USER', 'getdemo');
-define('DB_PASS', 'pjoo*bHxEE0u');
-define('DB_NAME', 'getdemo_payal_arban_stichies');
-$web_url='https://getdemo.in/your-boutique/';
+// define('DB_USER', 'getdemo');
+// define('DB_PASS', 'pjoo*bHxEE0u');
+// define('DB_NAME', 'getdemo_payal_arban_stichies');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_NAME', 'payal_arban_stichies');
+// $web_url='https://getdemo.in/your-boutique/';
+$web_url='http://localhost/your-boutique/';
 // Create database connection
 function getDBConnection() {
     try {

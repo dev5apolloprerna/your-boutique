@@ -27,7 +27,7 @@ function getUserFullName() {
 // Require login - redirect to login page if not logged in
 function requireLogin() {
     if (!isLoggedIn()) {
-        header('Location: /login.php');
+        header('Location: '. $web_url .'/login.php');
         exit();
     }
 }

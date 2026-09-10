@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../includes/header.php';
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $categoryName = sanitize($_POST['category_name'] ?? '');
+    $hsnCode = sanitize($_POST['hsn_code'] ?? '');
     $sortOrder = intval($_POST['sort_order'] ?? 0);
     $isActive = isset($_POST['is_active']) ? 1 : 0;
     $gst_rate = floatval($_POST['gst_rate'] ?? 0);
@@ -25,9 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result->num_rows > 0) {
             setFlashMessage('error', 'Category already exists');
         } else {
-            $sql = "INSERT INTO categories (category_name, gst_rate, is_split, sort_order, is_active) VALUES (?, ?, ?, ? ,?)";
+            $sql = "INSERT INTO categories (category_name, hsn_code, gst_rate, is_split, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param('sdiii', $categoryName, $gst_rate, $isSplit, $sortOrder, $isActive);
+            $stmt->bind_param('ssdiii', $categoryName, $hsnCode, $gst_rate, $isSplit, $sortOrder, $isActive);
             
             if ($stmt->execute()) {
                 setFlashMessage('success', 'Category added successfully');
@@ -65,6 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="category_name" class="form-label">Category Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="category_name" name="category_name" 
                                placeholder="e.g., Shirts, Jeans, T-Shirts" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hsn_code" class="form-label">HSN Code</label>
+                        <input type="text" class="form-control text-uppercase" id="hsn_code" name="hsn_code"
+                               value="<?php echo htmlspecialchars($_POST['hsn_code'] ?? ''); ?>"
+                               placeholder="e.g., 6205" maxlength="20">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">GST (%)</label>

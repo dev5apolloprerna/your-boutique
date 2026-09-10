@@ -176,7 +176,7 @@ while ($row = $result->fetch_assoc()) {
 
 <div class="row">
     <!-- Recent Invoices -->
-    <div class="col-md-7 mb-4">
+    <div class="col-md-12 mb-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-receipt"></i> Recent Invoices</span>
@@ -221,7 +221,7 @@ while ($row = $result->fetch_assoc()) {
     </div>
     
     <!-- Low Stock Alert -->
-    <div class="col-md-5 mb-4">
+    <!-- <div class="col-md-5 mb-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-exclamation-triangle text-warning"></i> Low Stock Alert</span>
@@ -261,7 +261,7 @@ while ($row = $result->fetch_assoc()) {
                 <?php endif; ?>
             </div>
         </div>
-    </div>
+    </div> -->
 </div>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

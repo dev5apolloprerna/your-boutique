@@ -1,6 +1,7 @@
 <?php
 ob_start();
-$pageTitle = 'View Invoice - Your-boutique';
+// $pageTitle = 'View Invoice - Your-boutique';
+$pageTitle = 'View Invoice - Payal Arban Stichis';
 require_once __DIR__ . '/../../includes/header.php';
 
 $invoiceNo = $_GET['invoice'] ?? '';
@@ -321,10 +322,11 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
         <!-- Header -->
         <div class="invoice-header">
             
-            <div class="company-name" style="width:100%; !important;"><span style="font-size:15px;float:left;">TAX INVOICE</span> <img style="margin-right: 80px;" src="../../assets/images/logo.png" alt="Your-boutique" class="company-logo" 
+            <div class="company-name" style="width:100%; !important;"><span style="font-size:15px;float:left;">TAX INVOICE</span> <img style="margin-right: 80px;" src="../../assets/images/logo.jpeg" alt="Payal Urban Stitch" class="company-logo" 
                  onerror="this.style.display='none'"></div>
             <div class="company-details">
-                <strong> 1 - Anurag Flat, Bhairavnath Cross Road, Maninagar, Ahmedabad - 380008, Gujarat - India.  M : 12345-67890 </strong>
+                <strong>31/3 Tirupati Avenue, Pushpkunj Society Gate-4,
+		Kankaria BRTS Road, Ahmedabad - 380008. M : 91065-31790 </strong>
             </div>
         </div>
         
@@ -336,7 +338,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                 <!--<strong>Name:</strong> <?php echo strtoupper($invoice['party_name']); ?><br>-->
                 <!--<strong>Contact No:</strong> <?php echo $invoice['mobile']; ?>-->
                 <strong>Name:</strong> <?php echo htmlspecialchars(strtoupper($invoice['party_name'])); ?><br>
-                <strong>Contact No:</strong> <?php echo !empty($invoice['mobile']) ? htmlspecialchars($invoice['mobile']) : 'Not provided'; ?>
+                <strong>Contact No:</strong> <?php echo !empty($invoice['mobile']) ? htmlspecialchars($invoice['mobile']) : '-'; ?>
             </div>
             <div class="invoice-info-right">
                 <strong>Invoice No:</strong> <?php echo $invoice['invoice_no']; ?><br>

@@ -33,9 +33,9 @@ if (isset($_GET['invoice']) || isset($_POST['invoice_no'])) {
         $currentDate = strtotime(date('Y-m-d'));
         $daysDiff = floor(($currentDate - $invoiceDate) / (60 * 60 * 24));
         
-        if ($daysDiff > 30) {
-            setFlashMessage('warning', 'This invoice is older than 30 days. Returns may not be accepted.');
-        }
+        // if ($daysDiff > 30) {
+        //     setFlashMessage('warning', 'This invoice is older than 30 days. Returns may not be accepted.');
+        // }
         
         // Get invoice items
         $itemsSql = "SELECT ii.*, p.product_code, p.product_name, s.size_name,
@@ -157,6 +157,9 @@ if (isset($_POST['generate_credit_note'])) {
             $stmt->execute();
             $result = $stmt->get_result();
             $invoice = $result->fetch_assoc();
+            if (!$invoice) {
+                throw new RuntimeException('Invoice not found.');
+            }
             
             // Calculate credit note totals
             $subtotal = 0;
@@ -184,8 +187,10 @@ if (isset($_POST['generate_credit_note'])) {
             $cnSql = "INSERT INTO credit_notes (credit_note_no, credit_date, invoice_id, party_id, subtotal, cgst_amount, sgst_amount, total_amount, refund_mode, notes, created_by) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $cnStmt = $conn->prepare($cnSql);
-            $cnStmt->bind_param('ssiidddddsi', $creditNoteNo, $creditDate, $invoice['id'], $invoice['party_id'], $subtotal, $totalCGST, $totalSGST, $grandTotal, $refundMode, $notes, $userId);
-            $cnStmt->execute();
+            $cnStmt->bind_param('ssiiddddssi', $creditNoteNo, $creditDate, $invoice['id'], $invoice['party_id'], $subtotal, $totalCGST, $totalSGST, $grandTotal, $refundMode, $notes, $userId);
+            if (!$cnStmt->execute()) {
+                throw new RuntimeException('Unable to save the credit note.');
+            }
             $creditNoteId = $conn->insert_id;
             
             // Insert credit note items and restore stock
@@ -198,8 +203,10 @@ if (isset($_POST['generate_credit_note'])) {
                 $cniSql = "INSERT INTO credit_note_items (credit_note_id, invoice_item_id, product_id, size_id, quantity, mrp, gst_rate, base_amount, cgst_amount, sgst_amount, total_amount) 
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $cniStmt = $conn->prepare($cniSql);
-                $cniStmt->bind_param('iiiiddddddd', $creditNoteId, $item['invoice_item_id'], $item['product_id'], $item['size_id'], $item['quantity'], $item['mrp'], $item['gst_rate'], $itemBase, $itemCGST, $itemSGST, $itemTotal);
-                $cniStmt->execute();
+                $cniStmt->bind_param('iiiiidddddd', $creditNoteId, $item['invoice_item_id'], $item['product_id'], $item['size_id'], $item['quantity'], $item['mrp'], $item['gst_rate'], $itemBase, $itemCGST, $itemSGST, $itemTotal);
+                if (!$cniStmt->execute()) {
+                    throw new RuntimeException('Unable to save a credit note item.');
+                }
                 
                 // Restore stock
                 updateStock($conn, $item['product_id'], $item['size_id'], $item['quantity'], 'add');
@@ -234,7 +241,9 @@ if (isset($_POST['generate_credit_note'])) {
                                  VALUES (?, ?, ?, ?, 0, ?, ?, ?, 'Exchange', ?, ?)";
                 $exInvStmt = $conn->prepare($exInvoiceSql);
                 $exInvStmt->bind_param('ssiddddsi', $exchangeInvoiceNo, $creditDate, $invoice['party_id'], $exchangeSubtotal, $exchangeCGST, $exchangeSGST, $exchangeTotal, $notes, $userId);
-                $exInvStmt->execute();
+                if (!$exInvStmt->execute()) {
+                    throw new RuntimeException('Unable to save the exchange invoice.');
+                }
                 $exchangeInvoiceId = $conn->insert_id;
                 
                 // Insert exchange items
@@ -249,7 +258,9 @@ if (isset($_POST['generate_credit_note'])) {
                                   VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)";
                     $exItemStmt = $conn->prepare($exItemSql);
                     $exItemStmt->bind_param('iiiidddddd', $exchangeInvoiceId, $exItem['product_id'], $exItem['size_id'], $exItem['quantity'], $exItem['mrp'], $exItem['gst_rate'], $itemBase, $itemCGST, $itemSGST, $itemTotal);
-                    $exItemStmt->execute();
+                    if (!$exItemStmt->execute()) {
+                        throw new RuntimeException('Unable to save an exchange item.');
+                    }
                     
                     // Update stock
                     updateStock($conn, $exItem['product_id'], $exItem['size_id'], $exItem['quantity'], 'subtract');
@@ -267,7 +278,7 @@ if (isset($_POST['generate_credit_note'])) {
             header('Location: view_credit_note.php?cn=' . $creditNoteNo);
             exit();
             
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $conn->rollback();
             setFlashMessage('error', 'Error generating credit note: ' . $e->getMessage());
         }

@@ -278,7 +278,6 @@ $(document).ready(function() {
         let baseUrl = currentUrl.split('/modules/')[0];
         let code = $(this).val().toUpperCase();
         $(this).val(code);
-        alert(baseUrl + '/api/get_product.php');
         if (code.length >= 3) {
             $.ajax({
                 url: baseUrl + '/api/get_product.php',
@@ -287,6 +286,7 @@ $(document).ready(function() {
                 dataType: 'json',
                 success: function(data) {
                     if (data.found) {
+                        alert(data.found);
                         $('#ex_product_id').val(data.id);
                         
                         let options = '<option value="">Select Size</option>';
