@@ -30,6 +30,13 @@ if ($result->num_rows === 0) {
 
 $invoice = $result->fetch_assoc();
 
+$paymentsSql = "SELECT payment_mode, amount FROM invoice_payments WHERE invoice_id = ? ORDER BY id";
+$paymentsStmt = $conn->prepare($paymentsSql);
+$paymentsStmt->bind_param('i', $invoice['id']);
+$paymentsStmt->execute();
+$paymentsResult = $paymentsStmt->get_result();
+$payments = $paymentsResult->fetch_all(MYSQLI_ASSOC);
+
 // Get invoice items
 $itemsSql = "SELECT 
                 ii.*, 
@@ -352,7 +359,16 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
             </div>
             <div class="invoice-info-right">
                 <strong>Invoice No:</strong> <?php echo $invoice['invoice_no']; ?><br>
-                <strong>Date:</strong> <?php echo date('d/m/Y', strtotime($invoice['invoice_date'])); ?>
+                <strong>Date:</strong> <?php echo date('d/m/Y', strtotime($invoice['invoice_date'])); ?><br>
+                <strong>Payment:</strong>
+                <?php if (!empty($payments)): ?>
+                    <?php foreach ($payments as $index => $payment): ?>
+                        <?php echo $index > 0 ? ' + ' : ''; ?><?php echo htmlspecialchars($payment['payment_mode']); ?>
+                        (<?php echo formatCurrency($payment['amount']); ?>)
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <?php echo htmlspecialchars($invoice['payment_mode']); ?>
+                <?php endif; ?>
             </div>
         </div>
 

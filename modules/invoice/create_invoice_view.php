@@ -285,18 +285,29 @@ $customer = $_SESSION['invoice_customer'];
                         </tr>
                     </table>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Payment Mode <span class="text-danger">*</span></label>
-                        <div class="btn-group w-100" role="group">
-                            <input type="radio" class="btn-check" name="payment_mode" id="cash" value="Cash" checked>
-                            <label class="btn btn-outline-success" for="cash"><i class="bi bi-cash"></i> Cash</label>
-                            
-                            <input type="radio" class="btn-check" name="payment_mode" id="card" value="Card">
-                            <label class="btn btn-outline-primary" for="card"><i class="bi bi-credit-card"></i> Card</label>
-                            
-                            <input type="radio" class="btn-check" name="payment_mode" id="upi" value="UPI">
-                            <label class="btn btn-outline-info" for="upi"><i class="bi bi-phone"></i> UPI</label>
+                    <div class="mb-3" id="payments_section">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Payments <span class="text-danger">*</span></label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="add_payment">
+                                <i class="bi bi-plus-circle"></i> Add Payment Mode
+                            </button>
                         </div>
+                        <div id="payment_rows">
+                            <div class="payment-row input-group mb-2">
+                                <select class="form-select payment-mode" name="payment_modes[]" required>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Card">Card</option>
+                                    <option value="UPI">UPI</option>
+                                </select>
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control payment-amount" name="payment_amounts[]"
+                                       min="0.01" step="0.01" required aria-label="Payment amount">
+                                <button type="button" class="btn btn-outline-danger remove-payment" aria-label="Remove payment" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="payment_balance" class="form-text text-end"></div>
                     </div>
                     
                     <button type="submit" class="btn btn-success btn-lg w-100">
@@ -531,10 +542,67 @@ function updateBillDiscount() {
         total = 0;
     
     $("#grand_total").html("₹" + total.toFixed(2));
+    if ($('.payment-row').length === 1) {
+        $('.payment-amount').val(total.toFixed(2));
+    }
+    updatePaymentBalance();
 }
 
 // $("#bill_discount").on("input", updateBillDiscount);
 $("#bill_discount_percent").on("input", updateBillDiscount);
 
 updateBillDiscount();
+
+function invoiceTotal() {
+    return parseFloat($('#grand_total').text().replace(/[^0-9.-]/g, '')) || 0;
+}
+
+function updatePaymentBalance() {
+    let paid = 0;
+    $('.payment-amount').each(function() {
+        paid += parseFloat($(this).val()) || 0;
+    });
+    let balance = invoiceTotal() - paid;
+    let balanced = Math.abs(balance) < 0.01;
+    $('#payment_balance')
+        .toggleClass('text-success', balanced)
+        .toggleClass('text-danger', !balanced)
+        .text(balanced ? 'Payment total matched' : 'Remaining: ₹' + balance.toFixed(2));
+    $('.remove-payment').prop('disabled', $('.payment-row').length === 1);
+    $('#add_payment').prop('disabled', $('.payment-row').length >= 3);
+}
+
+$('#add_payment').on('click', function() {
+    let remaining = invoiceTotal();
+    $('.payment-amount').each(function() {
+        remaining -= parseFloat($(this).val()) || 0;
+    });
+    if (remaining < 0.01) {
+        let largestInput = $('.payment-amount').first();
+        $('.payment-amount').each(function() {
+            if ((parseFloat($(this).val()) || 0) > (parseFloat(largestInput.val()) || 0)) {
+                largestInput = $(this);
+            }
+        });
+        let largestAmount = parseFloat(largestInput.val()) || 0;
+        remaining = Math.floor((largestAmount / 2) * 100) / 100;
+        largestInput.val((largestAmount - remaining).toFixed(2));
+    }
+    let row = $('.payment-row').first().clone();
+    let usedModes = $('.payment-mode').map(function() { return $(this).val(); }).get();
+    let nextMode = ['Cash', 'Card', 'UPI'].find(function(mode) { return !usedModes.includes(mode); });
+    row.find('.payment-mode').val(nextMode || 'UPI');
+    row.find('.payment-amount').val(Math.max(0, remaining).toFixed(2));
+    row.find('.remove-payment').prop('disabled', false);
+    $('#payment_rows').append(row);
+    updatePaymentBalance();
+});
+
+$(document).on('input change', '.payment-amount, .payment-mode', updatePaymentBalance);
+$(document).on('click', '.remove-payment', function() {
+    if ($('.payment-row').length > 1) {
+        $(this).closest('.payment-row').remove();
+        updatePaymentBalance();
+    }
+});
 </script>

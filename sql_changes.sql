@@ -12,3 +12,6 @@ ALTER TABLE `categories`
 
 ALTER TABLE `invoices`
     MODIFY `payment_mode` ENUM('Cash', 'Card', 'UPI', 'Exchange') DEFAULT 'Cash';
+
+
+ALTER TABLE `invoices` CHANGE `payment_mode` `payment_mode` ENUM('Cash','Card','UPI','Split') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'Cash';

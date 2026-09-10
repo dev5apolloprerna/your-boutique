@@ -160,7 +160,24 @@ if (isset($_GET['remove'])) {
 // Handle invoice generation
 if (isset($_POST['generate_invoice'])) {
     
-    $paymentMode = sanitize($_POST['payment_mode']);
+    $allowedPaymentModes = ['Cash', 'Card', 'UPI'];
+    $postedPaymentModes = $_POST['payment_modes'] ?? [];
+    $postedPaymentAmounts = $_POST['payment_amounts'] ?? [];
+    $paymentAmountsByMode = [];
+
+    if (is_array($postedPaymentModes) && is_array($postedPaymentAmounts)) {
+        foreach ($postedPaymentModes as $index => $mode) {
+            $mode = sanitize($mode);
+            $amount = round(floatval($postedPaymentAmounts[$index] ?? 0), 2);
+            if (in_array($mode, $allowedPaymentModes, true) && $amount > 0) {
+                $paymentAmountsByMode[$mode] = round(($paymentAmountsByMode[$mode] ?? 0) + $amount, 2);
+            }
+        }
+    }
+    $payments = [];
+    foreach ($paymentAmountsByMode as $mode => $amount) {
+        $payments[] = ['mode' => $mode, 'amount' => $amount];
+    }
     // $billDiscount = floatval($_POST['bill_discount'] ?? 0);
     $billDiscountPercent = min(100, max(0, floatval($_POST['bill_discount_percent'] ?? 0)));
     
@@ -289,6 +306,17 @@ if (isset($_POST['generate_invoice'])) {
                 $totalSGST += $sgst;
                 $grandTotal += $discountedTotal;
             }
+            unset($item);
+
+            $paymentTotal = round(array_sum(array_column($payments, 'amount')), 2);
+            if (empty($payments)) {
+                throw new Exception('Please add at least one payment');
+            }
+            if (abs($paymentTotal - round($grandTotal, 2)) > 0.01) {
+                throw new Exception('Payment total must equal invoice total of ' . number_format($grandTotal, 2));
+            }
+
+            $paymentMode = count($payments) > 1 ? 'Split' : $payments[0]['mode'];
             // $grandTotal -= $totalDiscount;
             // Generate invoice number
             $invoiceNo = generateInvoiceNumber($conn);
@@ -303,6 +331,14 @@ if (isset($_POST['generate_invoice'])) {
             $invoiceStmt->execute();
             $invoiceId = $conn->insert_id;
             
+            $paymentSql = "INSERT INTO invoice_payments (invoice_id, payment_mode, amount) VALUES (?, ?, ?)";
+            $paymentStmt = $conn->prepare($paymentSql);
+            foreach ($payments as $payment) {
+                $paymentModeValue = $payment['mode'];
+                $paymentAmount = $payment['amount'];
+                $paymentStmt->bind_param('isd', $invoiceId, $paymentModeValue, $paymentAmount);
+                $paymentStmt->execute();
+            }
             // Insert invoice items and update stock
            
            
