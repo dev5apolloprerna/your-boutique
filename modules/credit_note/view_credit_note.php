@@ -80,22 +80,23 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
 <div class="credit-note-print" id="credit-note-content">
     <style>
         .credit-note-print {
-            width: 148mm;
-            min-height: 210mm;
+            width: 210mm;
+            max-width: 210mm;
             margin: 0 auto;
-            padding: 6mm;
+            padding: 10px;
             color: #111;
             background: #fff;
             border: 1px solid #bbb;
             box-sizing: border-box;
             font-family: Arial, sans-serif;
-            font-size: 9px;
+            font-size: 11px;
         }
 
         .cn-header {
             text-align: center;
             border-bottom: .5px solid #000;
-            padding-bottom: 5px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
         }
 
         .cn-heading {
@@ -119,16 +120,17 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
         }
 
         .cn-company-details {
-            font-size: 8px;
-            line-height: 1.35;
+            font-size: 10px;
+            line-height: 1.4;
         }
 
         .cn-info {
             display: flex;
             justify-content: space-between;
             gap: 8px;
-            margin: 7px 0;
-            line-height: 1.55;
+            margin: 8px 0;
+            font-size: 10px;
+            line-height: 1.3;
         }
 
         .cn-info>div {
@@ -143,13 +145,14 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            margin-top: 4px;
+            margin: 8px 0;
+            font-size: 10px;
         }
 
         .cn-items th,
         .cn-items td {
-            border: .25px solid #000;
-            padding: 3px 2px;
+            border-right: .25px solid #000;
+            padding: 4px 3px;
             vertical-align: top;
             overflow-wrap: anywhere;
         }
@@ -157,11 +160,18 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
         .cn-items th {
             background: #f2f2f2;
             text-align: center;
-            font-size: 8px;
+            border-top: .25px solid #000;
+            border-bottom: .25px solid #000;
+            font-size: 9px;
         }
 
         .cn-items td {
-            height: 17px;
+            font-size: 10px;
+        }
+
+        .cn-items th:first-child,
+        .cn-items td:first-child {
+            border-left: .25px solid #000;
         }
 
         .cn-center {
@@ -178,9 +188,9 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
         }
 
         .cn-words {
-            margin-top: 6px;
-            padding: 4px;
-            border: .5px solid #000;
+            margin: 8px 0;
+            padding: 5px;
+            border: 1px solid #000;
             background: #fafafa;
             font-style: italic;
         }
@@ -195,9 +205,9 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            margin-top: 8px;
-            padding-top: 6px;
-            border-top: .5px solid #000;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #333;
             font-size: 8px;
             line-height: 1.4;
         }
@@ -253,15 +263,19 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
             }
 
             .credit-note-print {
-                position: absolute;
-                inset: 0;
-                width: 148mm;
-                min-height: 210mm;
-                margin: 0;
-                padding: 6mm;
-                border: 0;
-                overflow: hidden;
-                page-break-after: avoid;
+                position: fixed !important;
+                left: 1mm !important;
+                top: 4mm !important;
+                width: 300mm !important;
+                max-width: 300mm !important;
+                margin: 0 !important;
+                padding: 8px !important;
+                border: 1px solid #333 !important;
+                box-sizing: border-box !important;
+                overflow: visible !important;
+                transform: scale(.72);
+                transform-origin: top left;
+                page-break-inside: avoid !important;
             }
         }
     </style>
@@ -334,7 +348,7 @@ $amountInWords = creditAmountToWords((int) round($creditNote['total_amount'])) .
                     <td class="cn-right"><strong><?php echo number_format($item['total_amount'], 2); ?></strong></td>
                 </tr>
             <?php endforeach; ?>
-            <?php for ($row = count($items); $row < 5; $row++): ?>
+            <?php for ($row = count($items); $row < 7; $row++): ?>
                 <tr>
                     <td>&nbsp;</td>
                     <td></td>
