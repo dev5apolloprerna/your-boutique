@@ -285,6 +285,37 @@ $customer = $_SESSION['invoice_customer'];
                         </tr>
                     </table>
 
+                    <div class="mb-3 border rounded p-3 bg-light">
+                        <label for="credit_note_id" class="form-label fw-bold">
+                            <i class="bi bi-receipt-cutoff"></i> Use Credit Note Balance
+                        </label>
+                        <?php if (!empty($availableCreditNotes)): ?>
+                        <select class="form-select" id="credit_note_id" name="credit_note_id">
+                            <option value="" data-balance="0">Do not apply</option>
+                            <?php foreach ($availableCreditNotes as $availableCreditNote): ?>
+                            <option value="<?php echo (int) $availableCreditNote['id']; ?>"
+                                    data-balance="<?php echo number_format($availableCreditNote['available_amount'], 2, '.', ''); ?>">
+                                <?php echo htmlspecialchars($availableCreditNote['credit_note_no']); ?>
+                                (available: <?php echo formatCurrency($availableCreditNote['available_amount']); ?>)
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="input-group mt-2" id="credit_note_amount_group" style="display:none;">
+                            <span class="input-group-text">Use ₹</span>
+                            <input type="number" class="form-control" id="credit_note_amount" name="credit_note_amount"
+                                   min="0.01" step="0.01" value="0">
+                        </div>
+                        <div class="form-text">Unused balance remains available for another invoice.</div>
+                        <?php else: ?>
+                        <select class="form-select" id="credit_note_id" name="credit_note_id" disabled>
+                            <option>No available exchange credit notes for this customer</option>
+                        </select>
+                        <div class="form-text">
+                            Only credit notes created with refund mode <strong>Exchange</strong> can be applied to an invoice.
+                        </div>
+                        <?php endif; ?>
+                    </div>
+
                     <?php if (!empty($availableCreditNotes)): ?>
                     <div class="mb-3">
                         <label for="credit_note_id" class="form-label">Apply Credit Note</label>
@@ -320,6 +351,7 @@ $customer = $_SESSION['invoice_customer'];
                                     <option value="Cash">Cash</option>
                                     <option value="Card">Card</option>
                                     <option value="UPI">UPI</option>
+                                    <option value="Credit Note">Credit Note</option>
                                 </select>
                                 <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control payment-amount" name="payment_amounts[]"
@@ -565,7 +597,11 @@ function updateBillDiscount() {
     
     $("#grand_total").html("₹" + total.toFixed(2));
     if ($('.payment-row').length === 1) {
-        $('.payment-amount').val(total.toFixed(2));
+        if ($('.payment-mode').first().val() === 'Credit Note') {
+            $('#credit_note_id').trigger('change');
+        } else {
+            $('.payment-amount').val(total.toFixed(2));
+        }
     }
     updatePaymentBalance();
 }
@@ -581,8 +617,10 @@ function invoiceTotal() {
 
 function updatePaymentBalance() {
     let paid = 0;
-    $('.payment-amount').each(function() {
-        paid += parseFloat($(this).val()) || 0;
+    $('.payment-row').each(function() {
+        if ($(this).find('.payment-mode').val() !== 'Credit Note') {
+            paid += parseFloat($(this).find('.payment-amount').val()) || 0;
+        }
     });
     let credit = parseFloat($('#credit_note_amount').val()) || 0;
     let balance = invoiceTotal() - paid - credit;
@@ -640,7 +678,31 @@ $('#add_payment').on('click', function() {
     updatePaymentBalance();
 });
 
-$(document).on('input change', '.payment-amount, .payment-mode', updatePaymentBalance);
+$(document).on('change', '.payment-mode', function() {
+    let row = $(this).closest('.payment-row');
+    if ($(this).val() === 'Credit Note') {
+        let selector = $('#credit_note_id:not(:disabled)');
+        if (!selector.length) {
+            alert('This customer has no available exchange credit note.');
+            $(this).val('Cash');
+            row.find('.payment-amount').val(invoiceTotal().toFixed(2));
+        } else {
+            if (!selector.val()) {
+                selector.prop('selectedIndex', 1).trigger('change');
+            }
+            row.find('.payment-amount').val((parseFloat($('#credit_note_amount').val()) || 0).toFixed(2));
+        }
+    }
+    updatePaymentBalance();
+});
+
+$(document).on('input', '.payment-amount', function() {
+    let row = $(this).closest('.payment-row');
+    if (row.find('.payment-mode').val() === 'Credit Note') {
+        $('#credit_note_amount').val($(this).val());
+    }
+    updatePaymentBalance();
+});
 $(document).on('click', '.remove-payment', function() {
     if ($('.payment-row').length > 1) {
         $(this).closest('.payment-row').remove();
