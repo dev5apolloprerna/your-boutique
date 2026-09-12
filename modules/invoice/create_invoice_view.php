@@ -285,37 +285,6 @@ $customer = $_SESSION['invoice_customer'];
                         </tr>
                     </table>
 
-                    <div class="mb-3 border rounded p-3 bg-light">
-                        <label for="credit_note_id" class="form-label fw-bold">
-                            <i class="bi bi-receipt-cutoff"></i> Use Credit Note Balance
-                        </label>
-                        <?php if (!empty($availableCreditNotes)): ?>
-                        <select class="form-select" id="credit_note_id" name="credit_note_id">
-                            <option value="" data-balance="0">Do not apply</option>
-                            <?php foreach ($availableCreditNotes as $availableCreditNote): ?>
-                            <option value="<?php echo (int) $availableCreditNote['id']; ?>"
-                                    data-balance="<?php echo number_format($availableCreditNote['available_amount'], 2, '.', ''); ?>">
-                                <?php echo htmlspecialchars($availableCreditNote['credit_note_no']); ?>
-                                (available: <?php echo formatCurrency($availableCreditNote['available_amount']); ?>)
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div class="input-group mt-2" id="credit_note_amount_group" style="display:none;">
-                            <span class="input-group-text">Use ₹</span>
-                            <input type="number" class="form-control" id="credit_note_amount" name="credit_note_amount"
-                                   min="0.01" step="0.01" value="0">
-                        </div>
-                        <div class="form-text">Unused balance remains available for another invoice.</div>
-                        <?php else: ?>
-                        <select class="form-select" id="credit_note_id" name="credit_note_id" disabled>
-                            <option>No available exchange credit notes for this customer</option>
-                        </select>
-                        <div class="form-text">
-                            Only credit notes created with refund mode <strong>Exchange</strong> can be applied to an invoice.
-                        </div>
-                        <?php endif; ?>
-                    </div>
-
                     <?php if (!empty($availableCreditNotes)): ?>
                     <div class="mb-3">
                         <label for="credit_note_id" class="form-label">Apply Credit Note</label>
