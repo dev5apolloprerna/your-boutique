@@ -145,7 +145,8 @@ foreach ($items as $item) {
     );
 
     $rowsToPrint = [];
-     if ($shouldSplit) {
+
+    if ($shouldSplit) {
         // First product fixed 2350
         $firstAmount = 2350;
 
@@ -183,6 +184,7 @@ foreach ($items as $item) {
             'print_total_amount' => $fullAmountCalc['total_amount'],
         ]);
     }
+    
 
     foreach ($rowsToPrint as $printItem) {
         $printRows[] = $printItem;
@@ -199,7 +201,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
 ?>
 
 <div class="no-print mb-3">
-    <button onclick="window.print()" class="btn btn-primary">
+    <button onclick="generatePDF()" class="btn btn-primary">
         <i class="bi bi-printer"></i> Print Invoice
     </button>
     <button onclick="generatePDF()" class="btn btn-success">
@@ -290,19 +292,17 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
             }
 
         }
-        @page { size: A4 portrait; margin: 5mm; }
+         @page { size: A4 portrait; margin: 5mm; }
         .invoice-container {
             width: 200mm;
             max-width: 100%;
             margin: 0 auto 12px;
             background: white;
             padding: 10px;
-            box-sizing: border-box;
             font-family: Arial, sans-serif;
             font-size: 11px;
             border: 1px solid #ddd;
         }
-
         .invoice-page + .invoice-page {
             break-before: page;
             page-break-before: always;
@@ -493,7 +493,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
     <?php foreach ($invoicePages as $pageIndex => $pageRows):
         $isLastPage = $pageIndex === $pageCount - 1;
     ?>
-    <div class="invoice-container invoice-page">
+    <div class="invoice-container">
         <!-- Header -->
         <div class="invoice-header">
 
@@ -576,8 +576,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                     ];
                 }
                 // while ($item = $itemsResult->fetch_assoc()):
-                foreach ($pageRows as $printItem):
-
+               foreach ($pageRows as $printItem):
 
                     $gstRate = isset($item['gst_rate']) && $item['gst_rate'] !== ''
                         ? (float)$item['gst_rate']
@@ -709,6 +708,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                     </tr>
                 <?php $iCounter++;
                 endwhile; ?>
+                <?php if ($isLastPage): ?>
                 <!-- Total Row -->
                 <?php // if($invoice['discount_amount'] > 0){ 
                 ?>
@@ -752,9 +752,11 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                         <td class="text-right"><strong><?php echo number_format($invoice['total_amount'], 2); ?></strong></td>
                     </tr>
                 <?php endif; ?>
+                <?php endif; ?>
             </tbody>
         </table>
 
+        <?php if ($isLastPage): ?>
         <?php if ($displayDiscount > 0): ?>
             <!-- <table class="items-table totals-section" aria-label="Invoice discount summary">
             <tbody>
@@ -829,7 +831,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                     </td>
                     <td width="40%" style="vertical-align: top; border: none;">
                         <div class="signature-section">
-                            <strong>For, Your-boutique</strong><br>
+                            <strong>For, Payal Arban Stichis</strong><br>
                             <div class="signature-line">
                                 Authorised Signatory
                             </div>
@@ -848,9 +850,15 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
         <div class="company-tagline">
             Thank you for shopping with us!
         </div>
+        <?php else: ?>
+            <p class="text-right">Continued on next page…</p>
+        <?php endif; ?>
+    <div class="text-center page-number">Page <?php echo $pageIndex + 1; ?> of <?php echo $pageCount; ?></div>
     </div>
+    <?php endforeach; ?>
 </div>
 
+<!-- <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script> -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
     // function generatePDF() {
@@ -865,12 +873,50 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
     //     html2pdf().set(opt).from(element).save();
 
     // }
+
+
+    // function generatePDF() {
+    //     const element = document.getElementById('invoice-content');
+
+    //     const opt = {
+    //         margin: 0,
+    //         filename: '<?php echo $invoiceNo; ?>.pdf',
+    //         image: {
+    //             type: 'jpeg',
+    //             quality: 0.98
+    //         },
+    //         html2canvas: {
+    //             scale: 2,
+    //             logging: false,
+    //             useCORS: true
+    //         },
+    //         jsPDF: {
+    //             unit: 'mm',
+    //             format: 'a4', // A5 Portrait
+    //             orientation: 'portrait'
+    //         }
+    //     };
+
+    //     html2pdf()
+    //         .set(opt)
+    //         .from(element)
+    //         .toPdf()
+    //         .get('pdf')
+    //         .then(function(pdf) {
+    //             pdf.autoPrint();
+
+    //             const blobUrl = pdf.output('bloburl');
+    //             window.open(blobUrl, '_blank');
+    //         });
+    // }
+
     function generatePDF() {
         const element = document.getElementById('invoice-content');
 
         const opt = {
-            margin: 0,
-            filename: '<?php echo $invoiceNo; ?>.pdf',
+            margin: 5,
+            filename: <?php echo json_encode($invoiceNo . '.pdf'); ?>,
+            pagebreak: { mode: ['css'], before: '.invoice-page + .invoice-page' },
             image: {
                 type: 'jpeg',
                 quality: 0.98
@@ -882,22 +928,12 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
             },
             jsPDF: {
                 unit: 'mm',
-                format: 'a4', // A5 Portrait
+                format: 'a4',
                 orientation: 'portrait'
             }
         };
 
-        html2pdf()
-            .set(opt)
-            .from(element)
-            .toPdf()
-            .get('pdf')
-            .then(function(pdf) {
-                pdf.autoPrint();
-
-                const blobUrl = pdf.output('bloburl');
-                window.open(blobUrl, '_blank');
-            });
+        return html2pdf().set(opt).from(element).save();
     }
 </script>
 
