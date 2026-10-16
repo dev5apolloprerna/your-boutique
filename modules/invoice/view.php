@@ -145,7 +145,6 @@ foreach ($items as $item) {
     );
 
     $rowsToPrint = [];
-
     if ($shouldSplit) {
         // First product fixed 2350
         $firstAmount = 2350;
@@ -184,7 +183,6 @@ foreach ($items as $item) {
             'print_total_amount' => $fullAmountCalc['total_amount'],
         ]);
     }
-    
 
     foreach ($rowsToPrint as $printItem) {
         $printRows[] = $printItem;
@@ -201,7 +199,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
 ?>
 
 <div class="no-print mb-3">
-    <button onclick="generatePDF()" class="btn btn-primary">
+    <button onclick="window.print()" class="btn btn-primary">
         <i class="bi bi-printer"></i> Print Invoice
     </button>
     <button onclick="generatePDF()" class="btn btn-success">
@@ -220,101 +218,109 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
 
 <div class="print-area" id="invoice-content">
     <style>
-        @media print {
-            @page {
-                size: 148mm 210mm;
-                margin: 0mm;
-            }
-
-            body {
-                font-size: 7pt;
-                line-height: 1.3;
-
-            }
-
-            .no-print,
-            header,
-            nav,
-            .navbar,
-            .sidebar,
-            .topbar,
-            .main-header,
-            .main-sidebar,
-            .main-footer,
-            footer {
-                display: none !important;
-                visibility: hidden !important;
-            }
-
-            .print-area,
-            .print-area *,
-            #invoice-content,
-            #invoice-content * {
-                visibility: visible !important;
-            }
-
-            .print-area,
-            #invoice-content {
-                position: fixed !important;
-                left: 1mm !important;
-                top: 4mm !important;
-
-                /* Keep your landscape invoice design but fit it inside portrait paper */
-                width: 350mm !important;
-                max-width: 350mm !important;
-                margin: 0 !important;
-                padding: 0 !important;
-
-                transform: scale(0.72);
-                transform-origin: top left;
-
-                background: #fff !important;
-                overflow: visible !important;
-            }
-
-            .invoice-container {
-                width: 300mm !important;
-                max-width: 300mm !important;
-                margin: 0 !important;
-                padding: 8px !important;
-                border: 1px solid #333 !important;
-                box-sizing: border-box !important;
-                overflow: visible !important;
-                page-break-inside: avoid !important;
-            }
-
-
-            .invoice-header {
-                text-align: center;
-                border-bottom: 0.50px solid #000;
-                padding-bottom: 8px;
-                margin-bottom: 8px;
-            }
-
+        @page {
+            size: A4 portrait;
+            margin: 5mm;
         }
-         @page { size: A4 portrait; margin: 5mm; }
+
         .invoice-container {
             width: 200mm;
             max-width: 100%;
             margin: 0 auto 12px;
             background: white;
             padding: 10px;
+            box-sizing: border-box;
             font-family: Arial, sans-serif;
             font-size: 11px;
             border: 1px solid #ddd;
         }
-        .invoice-page + .invoice-page {
+
+        .invoice-page+.invoice-page {
             break-before: page;
             page-break-before: always;
         }
-        .items-table tr { break-inside: avoid; page-break-inside: avoid; }
-        .items-table td { overflow-wrap: anywhere; }
-        .page-number { margin-top: 8px; font-size: 9px; }
+
+        #invoice-content {
+            width: 200mm;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        #invoice-content *,
+        #invoice-content *::before,
+        #invoice-content *::after {
+            box-sizing: border-box;
+        }
+
+        .items-table {
+            table-layout: fixed;
+            border: 0.5px solid #000;
+        }
+
+        .items-table th,
+        .items-table td {
+            width: auto;
+        }
+
+        .items-table td {
+            vertical-align: top;
+        }
+
+        .invoice-blank-row {
+            height: 23px;
+        }
+
+        .invoice-info-left,
+        .invoice-info-right {
+            overflow-wrap: anywhere;
+        }
+
+        .invoice-info-right {
+            min-width: 0;
+        }
+
+        .items-table tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .items-table td {
+            overflow-wrap: anywhere;
+        }
+
+        .page-number {
+            margin-top: 8px;
+            font-size: 9px;
+        }
+
         @media print {
-            .no-print, nav, .navbar, body > footer { display: none !important; }
-            body, .container, .container-fluid { margin: 0 !important; padding: 0 !important; max-width: none !important; }
-            .print-area { position: static !important; transform: none !important; width: 100%; }
-            .invoice-container { margin: 0; width: 200mm; max-width: 100%; }
+
+            .no-print,
+            nav,
+            .navbar,
+            body>footer {
+                display: none !important;
+            }
+
+            body,
+            .container,
+            .container-fluid {
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: none !important;
+            }
+
+            .print-area {
+                position: static !important;
+                transform: none !important;
+                width: 100%;
+            }
+
+            .invoice-container {
+                margin: 0;
+                width: 200mm;
+                max-width: 100%;
+            }
         }
 
         .invoice-header {
@@ -493,153 +499,76 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
     <?php foreach ($invoicePages as $pageIndex => $pageRows):
         $isLastPage = $pageIndex === $pageCount - 1;
     ?>
-    <div class="invoice-container">
-        <!-- Header -->
-        <div class="invoice-header">
+        <div class="invoice-container invoice-page">
+            <!-- Header -->
+            <div class="invoice-header">
 
-            <div class="company-name" style="width:100%; !important;"><span style="font-size:15px;float:left;">TAX INVOICE</span> <img style="margin-right: 80px;" src="../../assets/images/logo.jpeg" alt="Payal Urban Stitch" class="company-logo"
-                    onerror="this.style.display='none'"></div>
-            <div class="company-details">
-                <strong>31/3 Tirupati Avenue, Pushpkunj Society Gate-4,
-                    Kankaria BRTS Road, Ahmedabad - 380008. M : 91065-31790 </strong>
+                <div class="company-name" style="width:100%; !important;"><span style="font-size:15px;float:left;">TAX INVOICE</span> <img style="margin-right: 80px;" src="../../assets/images/logo.jpeg" alt="Payal Urban Stitch" class="company-logo"
+                        onerror="this.style.display='none'"></div>
+                <div class="company-details">
+                    <strong>31/3 Tirupati Avenue, Pushpkunj Society Gate-4,
+                        Kankaria BRTS Road, Ahmedabad - 380008. M : 91065-31790 </strong>
+                </div>
             </div>
-        </div>
 
-        <!--<div class="invoice-title text-center">TAX INVOICE</div>-->
+            <!--<div class="invoice-title text-center">TAX INVOICE</div>-->
 
-        <!-- Invoice Info -->
-        <div class="invoice-info">
-            <div class="invoice-info-left">
-                <!--<strong>Name:</strong> <?php echo strtoupper($invoice['party_name']); ?><br>-->
-                <!--<strong>Contact No:</strong> <?php echo $invoice['mobile']; ?>-->
-                <strong>Name:</strong> <?php echo htmlspecialchars(strtoupper($invoice['party_name'])); ?><br>
-                <strong>Contact No:</strong> <?php echo !empty($invoice['mobile']) ? htmlspecialchars($invoice['mobile']) : '-'; ?>
+            <!-- Invoice Info -->
+            <div class="invoice-info">
+                <div class="invoice-info-left">
+                    <!--<strong>Name:</strong> <?php echo strtoupper($invoice['party_name']); ?><br>-->
+                    <!--<strong>Contact No:</strong> <?php echo $invoice['mobile']; ?>-->
+                    <strong>Name:</strong> <?php echo htmlspecialchars(strtoupper($invoice['party_name'])); ?><br>
+                    <strong>Contact No:</strong> <?php echo !empty($invoice['mobile']) ? htmlspecialchars($invoice['mobile']) : '-'; ?>
+                </div>
+                <div class="invoice-info-right">
+                    <strong>Invoice No:</strong> <?php echo $invoice['invoice_no']; ?><br>
+                    <strong>Date:</strong> <?php echo date('d/m/Y', strtotime($invoice['invoice_date'])); ?><br>
+                    <?php if ($isLastPage): ?>
+                        <strong>Payment:</strong>
+                        <?php if (!empty($payments)): ?>
+                            <?php foreach ($payments as $index => $payment): ?>
+                                <?php echo $index > 0 ? ' + ' : ''; ?><?php echo htmlspecialchars($payment['payment_mode']); ?>
+                                (<?php echo formatCurrency($payment['amount']); ?>)
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php echo htmlspecialchars($invoice['payment_mode']); ?>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
             </div>
-            <div class="invoice-info-right">
-                <strong>Invoice No:</strong> <?php echo $invoice['invoice_no']; ?><br>
-                <strong>Date:</strong> <?php echo date('d/m/Y', strtotime($invoice['invoice_date'])); ?><br>
-                <?php if ($isLastPage): ?>
-                <strong>Payment:</strong>
-                <?php if (!empty($payments)): ?>
-                    <?php foreach ($payments as $index => $payment): ?>
-                        <?php echo $index > 0 ? ' + ' : ''; ?><?php echo htmlspecialchars($payment['payment_mode']); ?>
-                        (<?php echo formatCurrency($payment['amount']); ?>)
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <?php echo htmlspecialchars($invoice['payment_mode']); ?>
-                <?php endif; ?>
-                <?php endif; ?>
-            </div>
-        </div>
 
-        <!-- Items Table -->
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th style="border-left: 0.25px solid #000;" width="30">Sr.No</th>
-                    <!--<th width="30" style="border-left: 0.25px solid #000;">Sr.No</th>-->
-                    <th width="80">Item Code</th>
-                    <th>Particular</th>
-                    <th width="40">Qty</th>
-                    <th width="50">Rate</th>
-                    <th width="55">HSN Code</th>
-                    <th width="50">I/CGST Amt</th>
-                    <th width="50">S/CGST Amt</th>
-                    <th width="60">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                $sr = 1;
-                $subtotal = 0;
-                $totalCGST = 0;
-                $totalSGST = 0;
-                $iCounter = 0;
-                $subTotal = 0;
-
-                function splitInclusiveGstAmount($grossAmount, $gstRate)
-                {
-                    $grossAmount = round((float)$grossAmount, 2);
-                    $gstRate = (float)$gstRate;
-
-                    $baseAmount = round($grossAmount / (1 + ($gstRate / 100)), 2);
-                    $taxAmount  = round($grossAmount - $baseAmount, 2);
-
-                    $cgstAmount = round($taxAmount / 2, 2);
-                    $sgstAmount = round($taxAmount - $cgstAmount, 2);
-
-                    return [
-                        'base_amount'  => $baseAmount,
-                        'cgst_amount'  => $cgstAmount,
-                        'sgst_amount'  => $sgstAmount,
-                        'total_amount' => $grossAmount
-                    ];
-                }
-                // while ($item = $itemsResult->fetch_assoc()):
-               foreach ($pageRows as $printItem):
-
-                    $gstRate = isset($item['gst_rate']) && $item['gst_rate'] !== ''
-                        ? (float)$item['gst_rate']
-                        : (float)$item['category_gst_rate'];
-
-                    // Always print the full item value; discounts belong to the invoice summary.
-                    $itemTotalAmount = round((float)$item['mrp'] * (int)$item['quantity'], 2);
-
-                    $shouldSplit = (
-                        $gstRate == 5.00 &&
-                        $itemTotalAmount > 2500 &&
-                        (int)$item['is_split'] === 1
-                    );
-
-                    $rowsToPrint = [];
-
-                    if ($shouldSplit) {
-                        // First product fixed 2350
-                        $firstAmount = 2350;
-
-                        // Second product remaining amount
-                        $secondAmount = round($itemTotalAmount - $firstAmount, 2);
-
-                        $firstCalc = splitInclusiveGstAmount($firstAmount, $gstRate);
-                        $secondCalc = splitInclusiveGstAmount($secondAmount, $gstRate);
-
-                        $rowsToPrint[] = array_merge($item, [
-                            'print_product_code' => $item['product_code'],
-                            'print_product_name' => $item['product_name'],
-                            'print_base_amount'  => $firstCalc['base_amount'],
-                            'print_cgst_amount'  => $firstCalc['cgst_amount'],
-                            'print_sgst_amount'  => $firstCalc['sgst_amount'],
-                            'print_total_amount' => $firstCalc['total_amount'],
-                        ]);
-
-                        $rowsToPrint[] = array_merge($item, [
-                            'print_product_code' => $item['product_code'] . '-1',
-                            'print_product_name' => $item['product_name'] . '-1',
-                            'print_base_amount'  => $secondCalc['base_amount'],
-                            'print_cgst_amount'  => $secondCalc['cgst_amount'],
-                            'print_sgst_amount'  => $secondCalc['sgst_amount'],
-                            'print_total_amount' => $secondCalc['total_amount'],
-                        ]);
-                    } else {
-                        $fullAmountCalc = splitInclusiveGstAmount($itemTotalAmount, $gstRate);
-                        $rowsToPrint[] = array_merge($item, [
-                            'print_product_code' => $item['product_code'],
-                            'print_product_name' => $item['product_name'],
-                            'print_base_amount'  => $fullAmountCalc['base_amount'],
-                            'print_cgst_amount'  => $fullAmountCalc['cgst_amount'],
-                            'print_sgst_amount'  => $fullAmountCalc['sgst_amount'],
-                            'print_total_amount' => $fullAmountCalc['total_amount'],
-                        ]);
-                    }
-
-                    foreach ($rowsToPrint as $rowIndex => $printItem): // foreach ($rowsToPrint as $printItem):
-
-                        $gstPercent = $gstRate / 2;
-
-                        $subTotal += $printItem['print_base_amount'];
-                        $totalCGST += $printItem['print_cgst_amount'];
-                        $totalSGST += $printItem['print_sgst_amount'];
-                ?>
+            <!-- Items Table -->
+            <table class="items-table">
+                <colgroup>
+                    <col style="width:4%">
+                    <col style="width:10%">
+                    <col style="width:34%">
+                    <col style="width:5%">
+                    <col style="width:11%">
+                    <col style="width:8%">
+                    <col style="width:8%">
+                    <col style="width:8%">
+                    <col style="width:12%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th style="border-left: 0.25px solid #000;" width="30">Sr.No</th>
+                        <!--<th width="30" style="border-left: 0.25px solid #000;">Sr.No</th>-->
+                        <th width="80">Item Code</th>
+                        <th>Particular</th>
+                        <th width="40">Qty</th>
+                        <th width="50">Rate</th>
+                        <th width="55">HSN Code</th>
+                        <th width="50">I/CGST Amt</th>
+                        <th width="50">S/CGST Amt</th>
+                        <th width="60">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    foreach ($pageRows as $printItem):
+                    ?>
                         <tr>
                             <td style="border-left: 0.25px solid #000;" class="text-center">
                                 <?php echo $sr++; ?>
@@ -680,40 +609,23 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                             </td>
                         </tr>
 
-                <?php
-                        $iCounter++;
-                    endforeach;
-
-                endforeach;
-                ?>
-                <?php
-                $TotalRow = 7;
-                if ($displayDiscount > 0) { ///if($invoice['discount_amount'] > 0){
-                    $TotalRow = 5;
-                }
-                while ($iCounter <  $TotalRow) :
-
-                ?>
-                    <tr>
-                        <td style="border-left: 0.25px solid #000;" class="text-center"><?php echo $sr; ?></td>
-                        <!--<td class="text-center" style="border-left: 0.25px solid #000;"><?php echo $sr++; ?></td>-->
-                        <td></td>
-                        <td class="text-center"></td>
-                        <td class="text-right"></td>
-                        <td class="text-center"></td>
-                        <td class="text-right"></td>
-                        <td class="text-center"></td>
-                        <td class="text-right"></td>
-                        <td class="text-right"></td>
-                    </tr>
-                <?php $iCounter++;
-                endwhile; ?>
-                <?php if ($isLastPage): ?>
-                <!-- Total Row -->
-                <?php // if($invoice['discount_amount'] > 0){ 
-                ?>
-                <?php if ($displayDiscount > 0) { ?>
-                    <!--<tr>
+                    <?php endforeach; ?>
+                    <?php // Keep seven visible row slots, as in the original invoice layout.
+                    // Blank slots do not count toward the six actual items per page.
+                    for ($blankRow = count($pageRows); $blankRow < 7; $blankRow++): ?>
+                        <tr class="invoice-blank-row">
+                            <td style="border-left: 0.25px solid #000;" class="text-center">&nbsp;</td>
+                            <?php for ($column = 0; $column < 8; $column++): ?>
+                                <td></td>
+                            <?php endfor; ?>
+                        </tr>
+                    <?php endfor; ?>
+                    <?php if ($isLastPage): ?>
+                        <!-- Total Row -->
+                        <?php // if($invoice['discount_amount'] > 0){ 
+                        ?>
+                        <?php if ($displayDiscount > 0) { ?>
+                            <!--<tr>
                         <td style="border-left: 0.25px solid #000;" class="text-center">7</td>
                         <td></td>
                         <td class="text-left">
@@ -729,36 +641,36 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                             <strong>-<?php echo number_format($displayDiscount, 2); ?></strong>
                         </td>
                     </tr> -->
-                <?php } ?>
-                <tr class="total-row">
-                    <td colspan="4" class="text-right"><strong>Total:</strong></td>
-                    <td class="text-right"><?php echo number_format($subTotal, 2); ?></td>
-                    <td></td>
-                    <td class="text-right"><?php echo number_format($totalCGST, 2); ?></td>
-                    <td class="text-right"><?php echo number_format($totalSGST, 2); ?></td>
-                    <td class="text-right"><strong><?php echo number_format($invoice['subtotal'], 2); ?></strong></td>
-                </tr>
-                <?php if ($displayDiscount > 0): ?>
-                    <tr>
-                        <td colspan="8" style="border-left: 0.25px solid #000;" class="text-right"><strong>Gross Amount:</strong></td>
-                        <td width="100" class="text-right"><?php echo number_format($invoice['subtotal'], 2); ?></td>
-                    </tr>
-                    <tr>
-                        <td colspan="8" style="border-left: 0.25px solid #000;" class="text-right"><strong>Discount (<?php echo number_format($discountPercent, 2); ?>%):</strong></td>
-                        <td class="text-right"><strong>-<?php echo number_format($displayDiscount, 2); ?></strong></td>
-                    </tr>
-                    <tr class="total-row">
-                        <td colspan="8" style="border-left: 0.25px solid #000;" class="text-right"><strong>Net Payable:</strong></td>
-                        <td class="text-right"><strong><?php echo number_format($invoice['total_amount'], 2); ?></strong></td>
-                    </tr>
-                <?php endif; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                        <?php } ?>
+                        <tr class="total-row">
+                            <td colspan="4" class="text-right"><strong>Total:</strong></td>
+                            <td class="text-right"><?php echo number_format($subTotal, 2); ?></td>
+                            <td></td>
+                            <td class="text-right"><?php echo number_format($totalCGST, 2); ?></td>
+                            <td class="text-right"><?php echo number_format($totalSGST, 2); ?></td>
+                            <td class="text-right"><strong><?php echo number_format($invoice['subtotal'], 2); ?></strong></td>
+                        </tr>
+                        <?php if ($displayDiscount > 0): ?>
+                            <tr>
+                                <td colspan="8" style="border-left: 0.25px solid #000;" class="text-right"><strong>Gross Amount:</strong></td>
+                                <td width="100" class="text-right"><?php echo number_format($invoice['subtotal'], 2); ?></td>
+                            </tr>
+                            <tr>
+                                <td colspan="8" style="border-left: 0.25px solid #000;" class="text-right"><strong>Discount (<?php echo number_format($discountPercent, 2); ?>%):</strong></td>
+                                <td class="text-right"><strong>-<?php echo number_format($displayDiscount, 2); ?></strong></td>
+                            </tr>
+                            <tr class="total-row">
+                                <td colspan="8" style="border-left: 0.25px solid #000;" class="text-right"><strong>Net Payable:</strong></td>
+                                <td class="text-right"><strong><?php echo number_format($invoice['total_amount'], 2); ?></strong></td>
+                            </tr>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
 
-        <?php if ($isLastPage): ?>
-        <?php if ($displayDiscount > 0): ?>
-            <!-- <table class="items-table totals-section" aria-label="Invoice discount summary">
+            <?php if ($isLastPage): ?>
+                <?php if ($displayDiscount > 0): ?>
+                    <!-- <table class="items-table totals-section" aria-label="Invoice discount summary">
             <tbody>
                 <tr>
                     <td class="text-right"><strong>Gross Amount:</strong></td>
@@ -774,166 +686,147 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                 </tr>
             </tbody>
         </table> -->
-        <?php endif; ?>
+                <?php endif; ?>
 
-        <!-- Amount in Words -->
-        <!-- <div class="amount-words">
+                <!-- Amount in Words -->
+                <!-- <div class="amount-words">
             <strong>Invoice Value in words:</strong> <?php echo $amountInWords; ?>
         </div> -->
-        <!-- Amount in Words and credit-note summary -->
-        <?php if (!empty($creditPayments)): ?>
-            <div class="invoice-summary-row">
-                <div class="amount-words">
-                    <strong>Invoice Value in words:</strong> <?php echo $amountInWords; ?>
-                </div>
-                <table class="credit-note-summary" aria-label="Credit note payment summary">
-                    <tbody>
+                <!-- Amount in Words and credit-note summary -->
+                <?php if (!empty($creditPayments)): ?>
+                    <div class="invoice-summary-row">
+                        <div class="amount-words">
+                            <strong>Invoice Value in words:</strong> <?php echo $amountInWords; ?>
+                        </div>
+                        <table class="credit-note-summary" aria-label="Credit note payment summary">
+                            <tbody>
+                                <tr>
+                                    <td><strong>Sub Total</strong></td>
+                                    <td><strong><?php echo formatCurrency($invoice['total_amount']); ?></strong></td>
+                                </tr>
+                                <?php foreach ($creditPayments as $creditPayment): ?>
+                                    <tr>
+                                        <td>Less: Credit Note (<?php echo htmlspecialchars($creditPayment['credit_note_no']); ?>)</td>
+                                        <td>(-) <?php echo formatCurrency($creditPayment['amount']); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <tr class="net-payable-row">
+                                    <td>Net Payable</td>
+                                    <td><?php echo formatCurrency(max(0, (float) $invoice['total_amount'] - $creditNoteAmount)); ?></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="amount-words">
+                        <strong>Invoice Value in words:</strong> <?php echo $amountInWords; ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Footer Section -->
+                <div class="footer-section">
+                    <table width="100%" style="border: none;">
                         <tr>
-                            <td><strong>Sub Total</strong></td>
-                            <td><strong><?php echo formatCurrency($invoice['total_amount']); ?></strong></td>
+                            <td width="60%" style="vertical-align: top; border: none;">
+                                <div class="gstin-section">
+                                    <strong>GSTIN:</strong> 24AIQPA5593E1Z8<br>
+                                    Subject to Ahmedabad Jurisdiction.
+                                </div>
+
+                                <div class="terms">
+                                    <strong>Terms & Conditions:</strong><br>
+                                    1. No guarantee for colour, material and slippage.<br>
+                                    2. Goods will be exchanged within 15 days from the date of purchase, provided the merchandise is in saleable condition and without any use of perfumes, with the original product tag and invoice, shown as proof of purchase.<br>
+                                    3. Credit note will be issued in exchange case, refunds will not be given.<br>
+                                    4. This is computer generated invoice and no signature is required.
+                                </div>
+                            </td>
+                            <td width="40%" style="vertical-align: top; border: none;">
+                                <div class="signature-section">
+                                    <strong>For, Payal Arban Stichis</strong><br>
+                                    <div class="signature-line">
+                                        Authorised Signatory
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 10px; text-align: right; font-size: 10px;">
+                                    <!--<strong>TOTAL</strong> : -->
+
+
+                                </div>
+                            </td>
                         </tr>
-                        <?php foreach ($creditPayments as $creditPayment): ?>
-                            <tr>
-                                <td>Less: Credit Note (<?php echo htmlspecialchars($creditPayment['credit_note_no']); ?>)</td>
-                                <td>(-) <?php echo formatCurrency($creditPayment['amount']); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                        <tr class="net-payable-row">
-                            <td>Net Payable</td>
-                            <td><?php echo formatCurrency(max(0, (float) $invoice['total_amount'] - $creditNoteAmount)); ?></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        <?php else: ?>
-            <div class="amount-words">
-                <strong>Invoice Value in words:</strong> <?php echo $amountInWords; ?>
-            </div>
-        <?php endif; ?>
+                    </table>
+                </div>
 
-        <!-- Footer Section -->
-        <div class="footer-section">
-            <table width="100%" style="border: none;">
-                <tr>
-                    <td width="60%" style="vertical-align: top; border: none;">
-                        <div class="gstin-section">
-                            <strong>GSTIN:</strong> 24AIQPA5593E1Z8<br>
-                            Subject to Ahmedabad Jurisdiction.
-                        </div>
-
-                        <div class="terms">
-                            <strong>Terms & Conditions:</strong><br>
-                            1. No guarantee for colour, material and slippage.<br>
-                            2. Goods will be exchanged within 15 days from the date of purchase, provided the merchandise is in saleable condition and without any use of perfumes, with the original product tag and invoice, shown as proof of purchase.<br>
-                            3. Credit note will be issued in exchange case, refunds will not be given.<br>
-                            4. This is computer generated invoice and no signature is required.
-                        </div>
-                    </td>
-                    <td width="40%" style="vertical-align: top; border: none;">
-                        <div class="signature-section">
-                            <strong>For, Payal Arban Stichis</strong><br>
-                            <div class="signature-line">
-                                Authorised Signatory
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 10px; text-align: right; font-size: 10px;">
-                            <!--<strong>TOTAL</strong> : -->
-
-
-                        </div>
-                    </td>
-                </tr>
-            </table>
+                <div class="company-tagline">
+                    Thank you for shopping with us!
+                </div>
+            <?php else: ?>
+                <p class="text-right">Continued on next page…</p>
+            <?php endif; ?>
+            <div class="text-center page-number">Page <?php echo $pageIndex + 1; ?> of <?php echo $pageCount; ?></div>
         </div>
-
-        <div class="company-tagline">
-            Thank you for shopping with us!
-        </div>
-        <?php else: ?>
-            <p class="text-right">Continued on next page…</p>
-        <?php endif; ?>
-    <div class="text-center page-number">Page <?php echo $pageIndex + 1; ?> of <?php echo $pageCount; ?></div>
-    </div>
     <?php endforeach; ?>
 </div>
 
-<!-- <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script> -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script>
-    // function generatePDF() {
-    //     const element = document.getElementById('invoice-content');
-    //     const opt = {
-    //         margin: 5,
-    //         filename: '<?php echo $invoiceNo; ?>.pdf',
-    //         image: { type: 'jpeg', quality: 0.98 },
-    //         html2canvas: { scale: 2, logging: false },
-    //         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    //     };
-    //     html2pdf().set(opt).from(element).save();
-
-    // }
-
-
-    // function generatePDF() {
-    //     const element = document.getElementById('invoice-content');
-
-    //     const opt = {
-    //         margin: 0,
-    //         filename: '<?php echo $invoiceNo; ?>.pdf',
-    //         image: {
-    //             type: 'jpeg',
-    //             quality: 0.98
-    //         },
-    //         html2canvas: {
-    //             scale: 2,
-    //             logging: false,
-    //             useCORS: true
-    //         },
-    //         jsPDF: {
-    //             unit: 'mm',
-    //             format: 'a4', // A5 Portrait
-    //             orientation: 'portrait'
-    //         }
-    //     };
-
-    //     html2pdf()
-    //         .set(opt)
-    //         .from(element)
-    //         .toPdf()
-    //         .get('pdf')
-    //         .then(function(pdf) {
-    //             pdf.autoPrint();
-
-    //             const blobUrl = pdf.output('bloburl');
-    //             window.open(blobUrl, '_blank');
-    //         });
-    // }
-
-    function generatePDF() {
-        const element = document.getElementById('invoice-content');
-
-        const opt = {
-            margin: 5,
-            filename: <?php echo json_encode($invoiceNo . '.pdf'); ?>,
-            pagebreak: { mode: ['css'], before: '.invoice-page + .invoice-page' },
-            image: {
-                type: 'jpeg',
-                quality: 0.98
-            },
-            html2canvas: {
-                scale: 2,
-                logging: false,
-                useCORS: true
-            },
-            jsPDF: {
-                unit: 'mm',
-                format: 'a4',
-                orientation: 'portrait'
+    async function generatePDF() {
+        if (typeof html2pdf === 'undefined') {
+            alert('PDF library could not load. Use Print Invoice and choose Save as PDF.');
+            return;
+        }
+        const button = document.querySelector('button[onclick="generatePDF()"]');
+        if (button) button.disabled = true;
+        try {
+            await document.fonts.ready;
+            const options = {
+                margin: 5,
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                },
+                html2canvas: {
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    ignoreElements: element => element.classList.contains('page-number')
+                }
+            };
+            // Render each invoice page separately so browser canvas rounding cannot
+            // cut off a footer or move a row onto an unintended PDF page.
+            const pdf = await html2pdf().set(options)
+                .from(document.createElement('div')).toPdf().get('pdf');
+            const pages = document.querySelectorAll('#invoice-content .invoice-page');
+            for (let index = 0; index < pages.length; index++) {
+                const canvas = await html2pdf().set(options).from(pages[index])
+                    .toCanvas().get('canvas');
+                if (index > 0) pdf.addPage();
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const widthAvailable = pageWidth - 10;
+                const heightAvailable = pageHeight - 20;
+                const scale = Math.min(widthAvailable / canvas.width, heightAvailable / canvas.height);
+                const width = canvas.width * scale;
+                const height = canvas.height * scale;
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG',
+                    (pageWidth - width) / 2, 5, width, height);
+                pdf.setFontSize(9);
+                pdf.text('Page ' + (index + 1) + ' of ' + pages.length,
+                    pageWidth / 2, pageHeight - 7, {
+                        align: 'center'
+                    });
             }
-        };
-
-        return html2pdf().set(opt).from(element).save();
+            pdf.save(<?php echo json_encode($invoiceNo . '.pdf'); ?>);
+        } catch (error) {
+            console.error('Invoice PDF generation failed', error);
+            alert('Unable to download PDF. Use Print Invoice and choose Save as PDF.');
+        } finally {
+            if (button) button.disabled = false;
+        }
     }
 </script>
 
