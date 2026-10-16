@@ -5,13 +5,20 @@ require_once __DIR__ . '/../includes/header.php';
 $fromDate = $_GET['from_date'] ?? date('Y-m-01');
 $toDate = $_GET['to_date'] ?? date('Y-m-d');
 
-$sql = "SELECT DATE(invoice_date) as sale_date, 
+$sql = "SELECT DATE(i.invoice_date) as sale_date,
                COUNT(*) as invoice_count,
-               SUM(total_amount) as total_sales
-        FROM invoices
-        WHERE invoice_date BETWEEN ? AND ?
-        GROUP BY DATE(invoice_date)
-        ORDER BY invoice_date DESC";
+               SUM(i.total_amount) as gross_sales,
+               SUM(COALESCE(ca.credit_note_amount, 0)) as credit_note_total,
+               SUM(i.total_amount - COALESCE(ca.credit_note_amount, 0)) as total_sales
+        FROM invoices i
+        LEFT JOIN (
+            SELECT invoice_id, SUM(amount) as credit_note_amount
+            FROM credit_note_applications
+            GROUP BY invoice_id
+        ) ca ON ca.invoice_id = i.id
+        WHERE i.invoice_date BETWEEN ? AND ?
+        GROUP BY DATE(i.invoice_date)
+        ORDER BY i.invoice_date DESC";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('ss', $fromDate, $toDate);
 $stmt->execute();
@@ -19,6 +26,8 @@ $result = $stmt->get_result();
 
 $grandTotal = 0;
 $totalInvoices = 0;
+$grossTotal = 0;
+$creditNoteTotal = 0;
 ?>
 
 <div class="row">
@@ -63,18 +72,24 @@ $totalInvoices = 0;
                     <tr>
                         <th>Date</th>
                         <th class="text-center">Invoices</th>
-                        <th class="text-end">Total Sales</th>
+                        <th class="text-end">Gross Sales</th>
+                        <th class="text-end">Credit Note Used</th>
+                        <th class="text-end">Net Sales</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($row = $result->fetch_assoc()): 
+                    <?php while ($row = $result->fetch_assoc()):
                         $grandTotal += $row['total_sales'];
+                        $grossTotal += $row['gross_sales'];
+                        $creditNoteTotal += $row['credit_note_total'];
                         $totalInvoices += $row['invoice_count'];
                     ?>
                     <tr>
                         <td><?php echo formatDate($row['sale_date']); ?></td>
                         <td class="text-center"><?php echo $row['invoice_count']; ?></td>
-                        <td class="text-end"><?php echo formatCurrency($row['total_sales']); ?></td>
+                        <td class="text-end"><?php echo formatCurrency($row['gross_sales']); ?></td>
+                        <td class="text-end text-danger">-<?php echo formatCurrency($row['credit_note_total']); ?></td>
+                        <td class="text-end fw-bold"><?php echo formatCurrency($row['total_sales']); ?></td>
                     </tr>
                     <?php endwhile; ?>
                 </tbody>
@@ -82,6 +97,8 @@ $totalInvoices = 0;
                     <tr>
                         <th>TOTAL</th>
                         <th class="text-center"><?php echo $totalInvoices; ?></th>
+                        <th class="text-end"><?php echo formatCurrency($grossTotal); ?></th>
+                        <th class="text-end text-danger">-<?php echo formatCurrency($creditNoteTotal); ?></th>
                         <th class="text-end"><?php echo formatCurrency($grandTotal); ?></th>
                     </tr>
                 </tfoot>

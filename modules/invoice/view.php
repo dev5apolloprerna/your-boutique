@@ -44,7 +44,10 @@ $creditPaymentsSql = "SELECT cn.credit_note_no, cna.amount
 $creditPaymentsStmt = $conn->prepare($creditPaymentsSql);
 $creditPaymentsStmt->bind_param('i', $invoice['id']);
 $creditPaymentsStmt->execute();
-foreach ($creditPaymentsStmt->get_result()->fetch_all(MYSQLI_ASSOC) as $creditPayment) {
+$creditPayments = $creditPaymentsStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$creditNoteAmount = 0;
+foreach ($creditPayments as $creditPayment) {
+    $creditNoteAmount += (float) $creditPayment['amount'];
     $payments[] = [
         'payment_mode' => 'Credit Note ' . $creditPayment['credit_note_no'],
         'amount' => $creditPayment['amount']
@@ -307,6 +310,39 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
             border: 1px solid #000;
             font-size: 10px;
             font-style: italic;
+        }
+
+        .invoice-summary-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 8px 0;
+        }
+
+        .invoice-summary-row .amount-words {
+            flex: 1;
+            margin: 0;
+        }
+
+        .credit-note-summary {
+            width: 36%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+
+        .credit-note-summary td {
+            border: 0.25px solid #000;
+            padding: 5px 7px;
+        }
+
+        .credit-note-summary td:last-child {
+            width: 35%;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .credit-note-summary .net-payable-row {
+            font-weight: bold;
         }
 
         .footer-section {
@@ -628,9 +664,39 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
         <?php endif; ?>
 
         <!-- Amount in Words -->
-        <div class="amount-words">
+        <!-- <div class="amount-words">
             <strong>Invoice Value in words:</strong> <?php echo $amountInWords; ?>
-        </div>
+        </div> -->
+        <!-- Amount in Words and credit-note summary -->
+        <?php if (!empty($creditPayments)): ?>
+            <div class="invoice-summary-row">
+                <div class="amount-words">
+                    <strong>Invoice Value in words:</strong> <?php echo $amountInWords; ?>
+                </div>
+                <table class="credit-note-summary" aria-label="Credit note payment summary">
+                    <tbody>
+                        <tr>
+                            <td><strong>Sub Total</strong></td>
+                            <td><strong><?php echo formatCurrency($invoice['total_amount']); ?></strong></td>
+                        </tr>
+                        <?php foreach ($creditPayments as $creditPayment): ?>
+                            <tr>
+                                <td>Less: Credit Note (<?php echo htmlspecialchars($creditPayment['credit_note_no']); ?>)</td>
+                                <td>(-) <?php echo formatCurrency($creditPayment['amount']); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        <tr class="net-payable-row">
+                            <td>Net Payable</td>
+                            <td><?php echo formatCurrency(max(0, (float) $invoice['total_amount'] - $creditNoteAmount)); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="amount-words">
+                <strong>Invoice Value in words:</strong> <?php echo $amountInWords; ?>
+            </div>
+        <?php endif; ?>
 
         <!-- Footer Section -->
         <div class="footer-section">

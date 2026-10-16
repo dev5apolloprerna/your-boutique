@@ -6,9 +6,16 @@ $fromDate = $_GET['from_date'] ?? date('Y-m-01');
 $toDate = $_GET['to_date'] ?? date('Y-m-d');
 
 $sql = "SELECT i.invoice_date, i.invoice_no, p.party_name, i.subtotal, i.discount_amount, 
-               i.cgst_amount, i.sgst_amount, i.total_amount
+               i.cgst_amount, i.sgst_amount, i.total_amount,
+               COALESCE(ca.credit_note_amount, 0) as credit_note_amount,
+               i.total_amount - COALESCE(ca.credit_note_amount, 0) as net_amount
         FROM invoices i
         INNER JOIN parties p ON i.party_id = p.id
+        LEFT JOIN (
+            SELECT invoice_id, SUM(amount) as credit_note_amount
+            FROM credit_note_applications
+            GROUP BY invoice_id
+        ) ca ON ca.invoice_id = i.id
         WHERE i.invoice_date BETWEEN ? AND ?
         ORDER BY i.invoice_date DESC";
 $stmt = $conn->prepare($sql);
@@ -16,7 +23,7 @@ $stmt->bind_param('ss', $fromDate, $toDate);
 $stmt->execute();
 $result = $stmt->get_result();
 
-$totals = ['invoices' => 0, 'subtotal' => 0, 'discount' => 0, 'cgst' => 0, 'sgst' => 0, 'total' => 0];
+$totals = ['invoices' => 0, 'subtotal' => 0, 'discount' => 0, 'cgst' => 0, 'sgst' => 0, 'total' => 0, 'credit_note' => 0, 'net' => 0];
 ?>
 
 <div class="row">
@@ -73,6 +80,8 @@ $totals = ['invoices' => 0, 'subtotal' => 0, 'discount' => 0, 'cgst' => 0, 'sgst
                         <th class="text-end">CGST</th>
                         <th class="text-end">SGST</th>
                         <th class="text-end">Total</th>
+                        <th class="text-end">Credit Note Used</th>
+                        <th class="text-end">Net Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,6 +92,8 @@ $totals = ['invoices' => 0, 'subtotal' => 0, 'discount' => 0, 'cgst' => 0, 'sgst
                         $totals['cgst'] += $row['cgst_amount'];
                         $totals['sgst'] += $row['sgst_amount'];
                         $totals['total'] += $row['total_amount'];
+                        $totals['credit_note'] += $row['credit_note_amount'];
+                        $totals['net'] += $row['net_amount'];
                     ?>
                     <tr>
                         <td><?php echo formatDate($row['invoice_date']); ?></td>
@@ -93,6 +104,8 @@ $totals = ['invoices' => 0, 'subtotal' => 0, 'discount' => 0, 'cgst' => 0, 'sgst
                         <td class="text-end"><?php echo formatCurrency($row['cgst_amount']); ?></td>
                         <td class="text-end"><?php echo formatCurrency($row['sgst_amount']); ?></td>
                         <td class="text-end"><?php echo formatCurrency($row['total_amount']); ?></td>
+                        <td class="text-end text-danger">-<?php echo formatCurrency($row['credit_note_amount']); ?></td>
+                        <td class="text-end fw-bold"><?php echo formatCurrency($row['net_amount']); ?></td>
                     </tr>
                     <?php endwhile; ?>
                 </tbody>
@@ -104,6 +117,8 @@ $totals = ['invoices' => 0, 'subtotal' => 0, 'discount' => 0, 'cgst' => 0, 'sgst
                         <th class="text-end"><?php echo formatCurrency($totals['cgst']); ?></th>
                         <th class="text-end"><?php echo formatCurrency($totals['sgst']); ?></th>
                         <th class="text-end"><?php echo formatCurrency($totals['total']); ?></th>
+                        <th class="text-end text-danger">-<?php echo formatCurrency($totals['credit_note']); ?></th>
+                        <th class="text-end"><?php echo formatCurrency($totals['net']); ?></th>
                     </tr>
                 </tfoot>
             </table>

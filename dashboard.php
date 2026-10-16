@@ -22,24 +22,40 @@ $stats['stock_value'] = $row['total_value'] ?? 0;
 // Today's Sales
 $today = date('Y-m-d');
 $result = $conn->query("
-    SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total 
-    FROM invoices 
-    WHERE invoice_date = '$today'
+    SELECT COUNT(*) as count,
+           COALESCE(SUM(i.total_amount - COALESCE(ca.credit_note_amount, 0)), 0) as total,
+           COALESCE(SUM(COALESCE(ca.credit_note_amount, 0)), 0) as credit_note_total
+    FROM invoices i
+    LEFT JOIN (
+        SELECT invoice_id, SUM(amount) as credit_note_amount
+        FROM credit_note_applications
+        GROUP BY invoice_id
+    ) ca ON ca.invoice_id = i.id
+    WHERE i.invoice_date = '$today'
 ");
 $row = $result->fetch_assoc();
 $stats['today_invoices'] = $row['count'];
 $stats['today_sales'] = $row['total'];
+$stats['today_credit_notes'] = $row['credit_note_total'];
 
 // This Month Sales
 $firstDay = date('Y-m-01');
 $result = $conn->query("
-    SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total 
-    FROM invoices 
-    WHERE invoice_date >= '$firstDay'
+    SELECT COUNT(*) as count,
+           COALESCE(SUM(i.total_amount - COALESCE(ca.credit_note_amount, 0)), 0) as total,
+           COALESCE(SUM(COALESCE(ca.credit_note_amount, 0)), 0) as credit_note_total
+    FROM invoices i
+    LEFT JOIN (
+        SELECT invoice_id, SUM(amount) as credit_note_amount
+        FROM credit_note_applications
+        GROUP BY invoice_id
+    ) ca ON ca.invoice_id = i.id
+    WHERE i.invoice_date >= '$firstDay'
 ");
 $row = $result->fetch_assoc();
 $stats['month_invoices'] = $row['count'];
 $stats['month_sales'] = $row['total'];
+$stats['month_credit_notes'] = $row['credit_note_total'];
 
 // Low Stock Products (less than 5 pieces)
 $result = $conn->query("
@@ -58,9 +74,16 @@ while ($row = $result->fetch_assoc()) {
 
 // Recent Invoices
 $result = $conn->query("
-    SELECT i.invoice_no, i.invoice_date, i.total_amount, p.party_name 
+    SELECT i.invoice_no, i.invoice_date, i.total_amount, p.party_name,
+           COALESCE(ca.credit_note_amount, 0) as credit_note_amount,
+           i.total_amount - COALESCE(ca.credit_note_amount, 0) as net_amount
     FROM invoices i
     INNER JOIN parties p ON i.party_id = p.id
+    LEFT JOIN (
+        SELECT invoice_id, SUM(amount) as credit_note_amount
+        FROM credit_note_applications
+        GROUP BY invoice_id
+    ) ca ON ca.invoice_id = i.id
     ORDER BY i.created_at DESC
     LIMIT 5
 ");
@@ -116,6 +139,9 @@ while ($row = $result->fetch_assoc()) {
                         <h6 class="text-muted mb-1">Today's Sales</h6>
                         <h3 class="mb-0"><?php echo formatCurrency($stats['today_sales']); ?></h3>
                         <small class="text-muted"><?php echo $stats['today_invoices']; ?> invoices</small>
+                        <?php if ($stats['today_credit_notes'] > 0): ?>
+                            <small class="d-block text-danger">Credit note used: -<?php echo formatCurrency($stats['today_credit_notes']); ?></small>
+                        <?php endif; ?>
                     </div>
                     <i class="bi bi-cart-check dashboard-icon text-warning"></i>
                 </div>
@@ -131,6 +157,9 @@ while ($row = $result->fetch_assoc()) {
                         <h6 class="text-muted mb-1">Month Sales</h6>
                         <h3 class="mb-0"><?php echo formatCurrency($stats['month_sales']); ?></h3>
                         <small class="text-muted"><?php echo $stats['month_invoices']; ?> invoices</small>
+                        <?php if ($stats['month_credit_notes'] > 0): ?>
+                            <small class="d-block text-danger">Credit note used: -<?php echo formatCurrency($stats['month_credit_notes']); ?></small>
+                        <?php endif; ?>
                     </div>
                     <i class="bi bi-graph-up dashboard-icon text-danger"></i>
                 </div>
@@ -204,7 +233,12 @@ while ($row = $result->fetch_assoc()) {
                                 </td>
                                 <td><?php echo formatDate($invoice['invoice_date']); ?></td>
                                 <td><?php echo $invoice['party_name']; ?></td>
-                                <td class="text-end text-currency"><?php echo formatCurrency($invoice['total_amount']); ?></td>
+                                <td class="text-end text-currency">
+                                    <?php echo formatCurrency($invoice['net_amount']); ?>
+                                    <?php if ($invoice['credit_note_amount'] > 0): ?>
+                                        <small class="d-block text-danger">Credit note used: -<?php echo formatCurrency($invoice['credit_note_amount']); ?></small>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
