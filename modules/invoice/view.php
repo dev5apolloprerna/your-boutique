@@ -68,7 +68,8 @@ $itemsSql = "SELECT
              INNER JOIN products p ON ii.product_id = p.id
              LEFT JOIN categories c ON p.category_id = c.id
              INNER JOIN sizes s ON ii.size_id = s.id
-             WHERE ii.invoice_id = ?";
+             WHERE ii.invoice_id = ?
+             ORDER BY ii.id";
 $itemsStmt = $conn->prepare($itemsSql);
 $itemsStmt->bind_param('i', $invoice['id']);
 $itemsStmt->execute();
@@ -105,11 +106,100 @@ function numberToWords($number)
     return numberToWords(intval($number / 10000000)) . ' Crore ' . numberToWords($number % 10000000);
 }
 
+
+// Paginate the rendered rows, including rows created by GST splitting.
+$printRows = [];
+$subTotal = $totalCGST = $totalSGST = 0;
+$sr = 1;
+function splitInclusiveGstAmount($grossAmount, $gstRate)
+{
+    $grossAmount = round((float)$grossAmount, 2);
+    $gstRate = (float)$gstRate;
+
+    $baseAmount = round($grossAmount / (1 + ($gstRate / 100)), 2);
+    $taxAmount  = round($grossAmount - $baseAmount, 2);
+
+    $cgstAmount = round($taxAmount / 2, 2);
+    $sgstAmount = round($taxAmount - $cgstAmount, 2);
+
+    return [
+        'base_amount'  => $baseAmount,
+        'cgst_amount'  => $cgstAmount,
+        'sgst_amount'  => $sgstAmount,
+        'total_amount' => $grossAmount
+    ];
+}
+foreach ($items as $item) {
+
+    $gstRate = isset($item['gst_rate']) && $item['gst_rate'] !== ''
+        ? (float)$item['gst_rate']
+        : (float)$item['category_gst_rate'];
+
+    // Always print the full item value; discounts belong to the invoice summary.
+    $itemTotalAmount = round((float)$item['mrp'] * (int)$item['quantity'], 2);
+
+    $shouldSplit = (
+        $gstRate == 5.00 &&
+        $itemTotalAmount > 2500 &&
+        (int)$item['is_split'] === 1
+    );
+
+    $rowsToPrint = [];
+     if ($shouldSplit) {
+        // First product fixed 2350
+        $firstAmount = 2350;
+
+        // Second product remaining amount
+        $secondAmount = round($itemTotalAmount - $firstAmount, 2);
+
+        $firstCalc = splitInclusiveGstAmount($firstAmount, $gstRate);
+        $secondCalc = splitInclusiveGstAmount($secondAmount, $gstRate);
+
+        $rowsToPrint[] = array_merge($item, [
+            'print_product_code' => $item['product_code'],
+            'print_product_name' => $item['product_name'],
+            'print_base_amount'  => $firstCalc['base_amount'],
+            'print_cgst_amount'  => $firstCalc['cgst_amount'],
+            'print_sgst_amount'  => $firstCalc['sgst_amount'],
+            'print_total_amount' => $firstCalc['total_amount'],
+        ]);
+
+        $rowsToPrint[] = array_merge($item, [
+            'print_product_code' => $item['product_code'] . '-1',
+            'print_product_name' => $item['product_name'] . '-1',
+            'print_base_amount'  => $secondCalc['base_amount'],
+            'print_cgst_amount'  => $secondCalc['cgst_amount'],
+            'print_sgst_amount'  => $secondCalc['sgst_amount'],
+            'print_total_amount' => $secondCalc['total_amount'],
+        ]);
+    } else {
+        $fullAmountCalc = splitInclusiveGstAmount($itemTotalAmount, $gstRate);
+        $rowsToPrint[] = array_merge($item, [
+            'print_product_code' => $item['product_code'],
+            'print_product_name' => $item['product_name'],
+            'print_base_amount'  => $fullAmountCalc['base_amount'],
+            'print_cgst_amount'  => $fullAmountCalc['cgst_amount'],
+            'print_sgst_amount'  => $fullAmountCalc['sgst_amount'],
+            'print_total_amount' => $fullAmountCalc['total_amount'],
+        ]);
+    }
+
+    foreach ($rowsToPrint as $printItem) {
+        $printRows[] = $printItem;
+        $subTotal += $printItem['print_base_amount'];
+        $totalCGST += $printItem['print_cgst_amount'];
+        $totalSGST += $printItem['print_sgst_amount'];
+    }
+}
+$invoicePages = array_chunk($printRows, 6);
+if (empty($invoicePages)) $invoicePages = [[]];
+$pageCount = count($invoicePages);
+
 $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only';
 ?>
 
 <div class="no-print mb-3">
-    <button onclick="generatePDF()" class="btn btn-primary">
+    <button onclick="window.print()" class="btn btn-primary">
         <i class="bi bi-printer"></i> Print Invoice
     </button>
     <button onclick="generatePDF()" class="btn btn-success">
@@ -200,16 +290,31 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
             }
 
         }
-
+        @page { size: A4 portrait; margin: 5mm; }
         .invoice-container {
-            width: 210mm !important;
-            max-width: 210mm !important;
-            margin: 0 auto;
+            width: 200mm;
+            max-width: 100%;
+            margin: 0 auto 12px;
             background: white;
             padding: 10px;
+            box-sizing: border-box;
             font-family: Arial, sans-serif;
             font-size: 11px;
             border: 1px solid #ddd;
+        }
+
+        .invoice-page + .invoice-page {
+            break-before: page;
+            page-break-before: always;
+        }
+        .items-table tr { break-inside: avoid; page-break-inside: avoid; }
+        .items-table td { overflow-wrap: anywhere; }
+        .page-number { margin-top: 8px; font-size: 9px; }
+        @media print {
+            .no-print, nav, .navbar, body > footer { display: none !important; }
+            body, .container, .container-fluid { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+            .print-area { position: static !important; transform: none !important; width: 100%; }
+            .invoice-container { margin: 0; width: 200mm; max-width: 100%; }
         }
 
         .invoice-header {
@@ -385,7 +490,10 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
         }
     </style>
 
-    <div class="invoice-container">
+    <?php foreach ($invoicePages as $pageIndex => $pageRows):
+        $isLastPage = $pageIndex === $pageCount - 1;
+    ?>
+    <div class="invoice-container invoice-page">
         <!-- Header -->
         <div class="invoice-header">
 
@@ -410,6 +518,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
             <div class="invoice-info-right">
                 <strong>Invoice No:</strong> <?php echo $invoice['invoice_no']; ?><br>
                 <strong>Date:</strong> <?php echo date('d/m/Y', strtotime($invoice['invoice_date'])); ?><br>
+                <?php if ($isLastPage): ?>
                 <strong>Payment:</strong>
                 <?php if (!empty($payments)): ?>
                     <?php foreach ($payments as $index => $payment): ?>
@@ -418,6 +527,7 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                     <?php endforeach; ?>
                 <?php else: ?>
                     <?php echo htmlspecialchars($invoice['payment_mode']); ?>
+                <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -466,7 +576,8 @@ $amountInWords = numberToWords(intval($invoice['total_amount'])) . ' Rupees Only
                     ];
                 }
                 // while ($item = $itemsResult->fetch_assoc()):
-                foreach ($items as $item):
+                foreach ($pageRows as $printItem):
+
 
                     $gstRate = isset($item['gst_rate']) && $item['gst_rate'] !== ''
                         ? (float)$item['gst_rate']
