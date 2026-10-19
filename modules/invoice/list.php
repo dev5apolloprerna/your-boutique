@@ -50,6 +50,10 @@ $result = $conn->query($sql);
                                class="btn btn-sm btn-danger" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            <a href="edit.php?invoice=<?= htmlspecialchars(rawurlencode($row['invoice_no']),ENT_QUOTES,'UTF-8') ?>"
+                                class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                         </td>
                     </tr>
                     <?php endwhile; ?>
